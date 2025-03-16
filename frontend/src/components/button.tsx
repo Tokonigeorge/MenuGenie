@@ -9,10 +9,10 @@ const Button: React.FC<ButtonProps> = ({
   className = '',
 }) => {
   const baseClasses =
-    'flex items-center justify-center gap-2 rounded-lg font-medium transition-colors';
+    'flex items-center justify-center gap-2 rounded-4xl font-medium transition-colors';
 
   const variantClasses = {
-    primary: 'bg-active text-white hover:bg-opacity-90 px-4 py-2',
+    primary: 'bg-gray-900 text-gray-300 hover:bg-opacity-90 px-4 py-2',
     secondary: 'bg-inactive text-gray-700 hover:bg-gray-300 px-3 py-1.5',
   };
 

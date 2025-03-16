@@ -10,23 +10,27 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   setActiveTab,
 }) => {
   return (
-    <div className='flex justify-between items-center px-6 py-4'>
-      <h2 className='text-lg font-semibold uppercase'>Meal Planner</h2>
+    <div className='flex justify-between items-center px-8 py-4 flex-wrap'>
+      <h2 className='text-xl font-semibold uppercase text-gray-600'>
+        Meal Planner
+      </h2>
 
-      <div className='flex rounded-full bg-inactive p-1 shadow-md'>
+      <div className='flex rounded-full gap-1.5 py-2 px-3 shadow-sm border border-gray-100'>
         <button
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+          className={`px-3 cursor-pointer py-2 rounded-full text-sm font-medium transition-colors ${
             activeTab === 'mealPlanner'
-              ? 'bg-active text-white'
-              : 'text-gray-700'
+              ? 'bg-gray-900 text-gray-300'
+              : 'text-gray-600'
           }`}
           onClick={() => setActiveTab('mealPlanner')}
         >
           Meal Planner
         </button>
         <button
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            activeTab === 'askGenie' ? 'bg-active text-white' : 'text-gray-700'
+          className={`px-3 cursor-pointer py-2 rounded-full text-sm font-medium transition-colors ${
+            activeTab === 'askGenie'
+              ? 'bg-gray-900 text-gray-300'
+              : 'text-gray-600'
           }`}
           onClick={() => setActiveTab('askGenie')}
         >

@@ -1,5 +1,6 @@
 import React from 'react';
 import Button from './button';
+import menu from '../assets/emptyMenu.svg';
 
 interface EmptyStateProps {
   onCreatePlan: () => void;
@@ -7,31 +8,21 @@ interface EmptyStateProps {
 
 const EmptyState: React.FC<EmptyStateProps> = ({ onCreatePlan }) => {
   return (
-    <div className='flex flex-col items-center justify-center py-20 px-4 text-center'>
+    <div className='flex flex-col items-center justify-center  px-4 text-center'>
       {/* Menu SVG icon */}
-      <svg
-        className='w-20 h-20 text-gray-400 mb-4'
-        fill='none'
-        stroke='currentColor'
-        viewBox='0 0 24 24'
-        xmlns='http://www.w3.org/2000/svg'
-      >
-        <path
-          strokeLinecap='round'
-          strokeLinejoin='round'
-          strokeWidth={2}
-          d='M4 6h16M4 12h16M4 18h16'
-        />
-      </svg>
+      <img src={menu} alt='menu' className='w-100 h-100' />
 
-      <h3 className='text-xl font-bold mb-2'>No meal plan found</h3>
-      <p className='text-gray-600 mb-6 max-w-md'>
+      <h3 className='text-2xl font-medium pb-2 text-gray-600'>
+        No meal plan found
+      </h3>
+      <p className=' mb-8 max-w-md text-sm font-normal text-gray-500'>
         You haven't created any meal plan yet. Click the "Create New Plan"
         button below to get started.
       </p>
 
       <Button
         onClick={onCreatePlan}
+        className='cursor-pointer p-4'
         icon={
           <svg
             className='w-5 h-5'
