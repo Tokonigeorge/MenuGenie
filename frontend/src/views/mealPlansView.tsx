@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Button from '../components/button';
 import TabNavigation from '../components/tabNavigation';
+import MealChatModal from '../components/mealChatModal';
 
 // Sample data for meal plans
 const mealPlans = [
@@ -111,6 +111,10 @@ const MealPlansView: React.FC = () => {
   );
 
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<
+    (typeof mealPlans)[0] | null
+  >(null);
 
   const itemsPerPage = 4;
   const totalPages = Math.ceil(mealPlans.length / itemsPerPage);
@@ -118,6 +122,15 @@ const MealPlansView: React.FC = () => {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = mealPlans.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handlePlanClick = (plan: (typeof mealPlans)[0]) => {
+    setSelectedPlan(plan);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className='flex h-[calc(100vh-64px)] w-full overflow-hidden'>
@@ -167,30 +180,28 @@ const MealPlansView: React.FC = () => {
             ))}
           </div>
         </div>
-        <div className=' border-t border-gray-300 bg-gray-50 sticky bottom-0 p-4 w-full'>
-          <Button
+        <div className=' border-t border-gray-300 bg-gray-50 sticky bottom-0 h-[70px] py-3.5 w-full text-center'>
+          <button
             onClick={() => console.log('Create new plan clicked')}
-            className='cursor-pointer p-6 w-full'
-            variant='primary'
-            icon={
-              <svg
-                className='w-5 h-5'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-                xmlns='http://www.w3.org/2000/svg'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M12 6v6m0 0v6m0-6h6m-6 0H6'
-                />
-              </svg>
-            }
+            className='cursor-pointer py-3 max-w-[250px] mx-auto px-4 bg-gray-900 text-white text-sm rounded-3xl flex items-center justify-center gap-2 w-full'
+            type='button'
           >
+            <svg
+              className='w-5 h-5'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+              xmlns='http://www.w3.org/2000/svg'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M12 6v6m0 0v6m0-6h6m-6 0H6'
+              />
+            </svg>
             Create new meal plan
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -202,6 +213,7 @@ const MealPlansView: React.FC = () => {
             {currentItems.map((plan) => (
               <div
                 key={plan.id}
+                onClick={() => handlePlanClick(plan)}
                 className='bg-white rounded-lg shadow-sm p-4 border border-gray-200 cursor-pointer'
               >
                 <h3 className='text-sm font-medium text-gray-600'>
@@ -246,7 +258,7 @@ const MealPlansView: React.FC = () => {
           </div>
         </div>
 
-        <div className='border-t border-gray-300 bg-gray-50 sticky bottom-0 p-4 w-full flex items-center justify-between'>
+        <div className='border-t border-gray-300 h-[70px] px-4 py-3.5 w-full flex items-center justify-between'>
           <div className='text-sm text-gray-500 font-medium'>
             Page <span className='text-gray-900'>{currentPage}</span> of{' '}
             {totalPages}
@@ -324,6 +336,9 @@ const MealPlansView: React.FC = () => {
           </div>
         </div>
       </div>
+      {isModalOpen && (
+        <MealChatModal onClose={handleCloseModal} selectedPlan={selectedPlan} />
+      )}
     </div>
   );
 };
