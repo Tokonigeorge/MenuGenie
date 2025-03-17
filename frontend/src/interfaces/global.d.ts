@@ -4,4 +4,6 @@ export interface ButtonProps {
   variant?: 'primary' | 'secondary';
   icon?: React.ReactNode;
   className?: string;
+  type?: 'button' | 'submit';
+  iconPosition?: 'left' | 'right';
 }

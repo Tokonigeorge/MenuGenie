@@ -1,12 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from './button';
 import menu from '../assets/emptyMenu.svg';
+import CreateMealPlanModal from './createMealPlanModal';
 
 interface EmptyStateProps {
   onCreatePlan: () => void;
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({ onCreatePlan }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
   return (
     <div className='flex flex-col items-center justify-center  px-4 text-center'>
       {/* Menu SVG icon */}
@@ -21,7 +32,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onCreatePlan }) => {
       </p>
 
       <Button
-        onClick={onCreatePlan}
+        onClick={handleOpenModal}
         className='cursor-pointer p-4'
         icon={
           <svg
@@ -42,6 +53,12 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onCreatePlan }) => {
       >
         Create new meal plan
       </Button>
+      {isModalOpen && (
+        <CreateMealPlanModal
+          onClose={handleCloseModal}
+          onComplete={onCreatePlan}
+        />
+      )}
     </div>
   );
 };

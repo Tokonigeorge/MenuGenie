@@ -7,6 +7,8 @@ const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   icon,
   className = '',
+  type = 'button',
+  iconPosition = 'left',
 }) => {
   const baseClasses =
     'flex items-center justify-center gap-2 rounded-4xl font-medium transition-colors';
@@ -18,11 +20,13 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      type={type}
       className={`${baseClasses} ${variantClasses[variant]} ${className}`}
       onClick={onClick}
     >
-      {icon && <span>{icon}</span>}
+      {icon && iconPosition === 'left' && <span>{icon}</span>}
       {children}
+      {icon && iconPosition === 'right' && <span>{icon}</span>}
     </button>
   );
 };
