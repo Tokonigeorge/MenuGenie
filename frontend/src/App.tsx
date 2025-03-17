@@ -6,12 +6,14 @@ import Header from './components/header';
 import TabNavigation from './components/tabNavigation';
 import EmptyState from './components/emptyState';
 import MealPlansView from './views/mealPlansView';
+import AskGenieView from './views/askGenieView';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'mealPlanner' | 'askGenie'>(
     'mealPlanner'
   );
   const [hasMealPlans, setHasMealPlans] = useState<boolean>(true);
+  // const [hasChats, setHasChats] = useState<boolean>(true);
   const [hasFavorites] = useState<boolean>(true);
 
   const handleCreatePlan = () => {
@@ -61,19 +63,14 @@ function App() {
       <main className=' flex items-center justify-center'>
         {activeTab === 'mealPlanner' &&
           (hasMealPlans ? (
-            <MealPlansView />
+            <MealPlansView activeTab={activeTab} setActiveTab={setActiveTab} />
           ) : (
             <div className='flex items-center justify-center h-full'>
               <EmptyState onCreatePlan={handleCreatePlan} />
             </div>
           ))}
         {activeTab === 'askGenie' && (
-          <div className='p-6'>
-            <h3 className='text-xl font-bold'>Ask Genie</h3>
-            <p className='text-gray-600'>
-              This feature will be implemented later.
-            </p>
-          </div>
+          <AskGenieView activeTab={activeTab} setActiveTab={setActiveTab} />
         )}
       </main>
     </div>

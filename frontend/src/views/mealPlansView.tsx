@@ -105,11 +105,10 @@ const mealPlans = [
   },
 ];
 
-const MealPlansView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'mealPlanner' | 'askGenie'>(
-    'mealPlanner'
-  );
-
+const MealPlansView: React.FC<{
+  activeTab: 'mealPlanner' | 'askGenie';
+  setActiveTab: (tab: 'mealPlanner' | 'askGenie') => void;
+}> = ({ activeTab, setActiveTab }) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<
