@@ -1,6 +1,12 @@
-const Header: React.FC = () => {
+import { ReactNode } from 'react';
+
+interface HeaderProps {
+  children?: ReactNode;
+}
+
+const Header: React.FC<HeaderProps> = ({ children }) => {
   return (
-    <header className='flex items-center h-16 px-6 bg-header border-b border-gray-200 bg-gray-50'>
+    <header className='flex items-center h-16 px-6 bg-header border-b border-gray-200 bg-gray-50 justify-between'>
       <div className='flex items-center gap-2'>
         <div className='p-2 border border-gray-200 rounded-full'>
           <svg
@@ -49,6 +55,7 @@ const Header: React.FC = () => {
         </div>
         <h1 className=' font-semibold text-gray-600'>Genie</h1>
       </div>
+      {children}
     </header>
   );
 };

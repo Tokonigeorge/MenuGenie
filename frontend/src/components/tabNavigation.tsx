@@ -10,7 +10,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   setActiveTab,
 }) => {
   return (
-    <div className='flex justify-between items-center px-8 py-4 flex-wrap'>
+    <div className='flex justify-between items-center flex-wrap'>
       <h2 className='text-xl font-semibold uppercase text-gray-600'>
         Meal Planner
       </h2>

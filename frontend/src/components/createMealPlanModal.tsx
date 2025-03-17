@@ -301,6 +301,7 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onSubmit = (data: FormValues) => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
