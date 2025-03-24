@@ -46,3 +46,6 @@ Pipfile.lock
 # Logs
 *.log
 logs/
+
+#project documentation
+project.md
