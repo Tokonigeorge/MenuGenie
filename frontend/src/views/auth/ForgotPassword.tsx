@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../../components/header';
+import { auth } from '../../firebaseConfig';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 const ForgotPasswordView = () => {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add password reset logic here
-    console.log('Password reset requested for:', email);
-    setIsSubmitted(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Error resetting password:', error);
+    }
   };
 
   return (

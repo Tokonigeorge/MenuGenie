@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from '../../components/header';
+import { auth } from '../../firebaseConfig';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
 
 interface SignUpViewProps {
   setIsAuthenticated: (value: boolean) => void;
@@ -13,25 +17,62 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+
   const navigate = useNavigate();
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (password !== confirmPassword) {
       setPasswordError('Passwords do not match');
       return;
     }
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential?.user;
+      console.log('User created:', user);
 
-    // Add actual sign up logic here
-    console.log('Signing up with:', email, password);
-    setIsAuthenticated(true);
-    navigate('/');
+      await axios.post('/api/register', {
+        email: email,
+        password: password,
+      });
+      setIsAuthenticated(true);
+      navigate('/login');
+    } catch (error: any) {
+      setIsAuthenticated(false);
+      const errorMessage =
+        error.code === 'auth/email-already-in-use'
+          ? 'This email is already in use.'
+          : 'Error signing up. Please try again.';
+
+      toast.error(errorMessage);
+      console.error('Error signing up:', error);
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (passwordError) {
+      setPasswordError('');
+    }
+  };
+
+  const handleConfirmPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setConfirmPassword(e.target.value);
+    if (passwordError) {
+      setPasswordError('');
+    }
   };
 
   return (
     <div className='min-h-screen flex flex-col bg-white'>
       <Header />
+
       <div className='flex-1 flex items-center justify-center px-4'>
         <div className='w-full max-w-md p-8 bg-white rounded-lg '>
           <h1 className='text-center text-xl font-medium text-gray-800 mb-10'>
@@ -39,6 +80,11 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
           </h1>
 
           <form onSubmit={handleSignUp}>
+            {passwordError && (
+              <p className='text-white text-sm mt-1 p-2 bg-red-500 rounded-md mb-4'>
+                {passwordError}
+              </p>
+            )}
             <div className='mb-6'>
               <label className='block text-sm font-medium text-gray-900 mb-1'>
                 Email Address
@@ -61,7 +107,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   className='w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder-gray-400'
                   placeholder='(min. of 8 characters)'
                   required
@@ -112,7 +158,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={handleConfirmPasswordChange}
                   className='w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder-gray-400'
                   placeholder='Confirm your password'
                   required
@@ -153,9 +199,6 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
                   </svg>
                 </button>
               </div>
-              {passwordError && (
-                <p className='text-red-500 text-sm mt-1'>{passwordError}</p>
-              )}
             </div>
 
             <button
@@ -243,6 +286,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
           </button>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };

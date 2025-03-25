@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 // import axios from 'axios';
 import {
   BrowserRouter as Router,
@@ -15,6 +15,8 @@ import AskGenieView from './views/askGenieView';
 import LoginView from './views/auth/LoginView';
 import SignUpView from './views/auth/SignUpView';
 import ForgotPasswordView from './views/auth/ForgotPassword';
+import { signOut } from 'firebase/auth';
+import { auth } from './firebaseConfig';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'mealPlanner' | 'askGenie'>(
@@ -24,12 +26,57 @@ function App() {
   // const [hasChats, setHasChats] = useState<boolean>(true);
   const [hasFavorites] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [loginTime, setLoginTime] = useState<number | null>(null);
+
+  const SESSION_TIMEOUT = 30 * 60 * 1000;
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setIsAuthenticated(false);
+      setLoginTime(null);
+      console.log('User logged out due to inactivity');
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   const handleCreatePlan = () => {
     console.log('Creating new meal plan...');
     setHasMealPlans(true);
     // This will be implemented later
   };
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        if (!loginTime) {
+          setLoginTime(Date.now());
+        }
+      } else {
+        setIsAuthenticated(false);
+        setLoginTime(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [loginTime]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !loginTime) return;
+
+    const interval = setInterval(() => {
+      const currentTime = Date.now();
+      const timeSinceLastActivity = currentTime - loginTime;
+
+      if (timeSinceLastActivity > SESSION_TIMEOUT) {
+        handleLogout();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, loginTime]);
   // const [message, setMessage] = useState<string>('');
 
   // useEffect(() => {
@@ -54,7 +101,12 @@ function App() {
         <Routes>
           <Route
             path='/login'
-            element={<LoginView setIsAuthenticated={setIsAuthenticated} />}
+            element={
+              <LoginView
+                setIsAuthenticated={setIsAuthenticated}
+                setLoginTime={setLoginTime}
+              />
+            }
           />
           <Route
             path='/signup'

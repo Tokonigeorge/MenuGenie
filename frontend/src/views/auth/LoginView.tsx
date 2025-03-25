@@ -1,22 +1,52 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from '../../components/header';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../firebaseConfig';
+import { toast, ToastContainer } from 'react-toastify';
 
 interface LoginViewProps {
   setIsAuthenticated: (value: boolean) => void;
+  setLoginTime: (value: number) => void;
 }
 
-const LoginView = ({ setIsAuthenticated }: LoginViewProps) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+const LoginView = ({ setIsAuthenticated, setLoginTime }: LoginViewProps) => {
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+
   const navigate = useNavigate();
-  const handleLogin = (e: React.FormEvent) => {
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add actual authentication logic here
-    console.log('Logging in with:', email, password);
-    setIsAuthenticated(true);
-    navigate('/');
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential?.user;
+      console.log('User logged in:', user);
+      setIsAuthenticated(true);
+
+      if (setLoginTime) {
+        setLoginTime(Date.now());
+      }
+      navigate('/');
+    } catch (error: any) {
+      setIsAuthenticated(false);
+      console.error('Error logging in:', error);
+      if (error.code === 'auth/user-not-found') {
+        toast.error('No user found with this email address.');
+      } else if (error.code === 'auth/wrong-password') {
+        toast.error('Incorrect password. Please try again.');
+      } else if (error.code === 'auth/invalid-credential') {
+        toast.error('Invalid credentials. Please try again.');
+      } else {
+        toast.error('Login failed. Please try again.');
+      }
+    }
   };
 
   return (
@@ -40,6 +70,7 @@ const LoginView = ({ setIsAuthenticated }: LoginViewProps) => {
                 className='w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder-gray-400'
                 placeholder='e.g bolu@gmail.com'
                 required
+                autoFocus
               />
             </div>
 
@@ -191,6 +222,7 @@ const LoginView = ({ setIsAuthenticated }: LoginViewProps) => {
           </button>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };
