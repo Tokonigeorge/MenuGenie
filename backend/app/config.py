@@ -16,5 +16,6 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY")
     DATABASE_NAME: str = os.getenv("DATABASE_NAME") or "genie"
     USER_COLLECTION: str = os.getenv("USER_COLLECTION") or "users"
+    MEAL_PLAN_COLLECTION: str = os.getenv("MEAL_PLAN_COLLECTION") or "meal_plans"
 
 settings = Settings()

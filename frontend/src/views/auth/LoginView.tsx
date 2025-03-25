@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from '../../components/header';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
 import { toast, ToastContainer } from 'react-toastify';
 
@@ -14,11 +18,35 @@ const LoginView = ({ setIsAuthenticated, setLoginTime }: LoginViewProps) => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      console.log('User logged in with Google:', user);
+      setIsAuthenticated(true);
+
+      if (setLoginTime) {
+        setLoginTime(Date.now());
+      }
+      navigate('/');
+      setIsGoogleLoading(false);
+    } catch (error: any) {
+      console.error('Error with Google sign-in:', error);
+      toast.error('Google sign-in failed. Please try again.');
+      setIsGoogleLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -33,6 +61,7 @@ const LoginView = ({ setIsAuthenticated, setLoginTime }: LoginViewProps) => {
       if (setLoginTime) {
         setLoginTime(Date.now());
       }
+      setIsLoading(false);
       navigate('/');
     } catch (error: any) {
       setIsAuthenticated(false);
@@ -46,6 +75,7 @@ const LoginView = ({ setIsAuthenticated, setLoginTime }: LoginViewProps) => {
       } else {
         toast.error('Login failed. Please try again.');
       }
+      setIsLoading(false);
     }
   };
 
@@ -139,9 +169,10 @@ const LoginView = ({ setIsAuthenticated, setLoginTime }: LoginViewProps) => {
 
             <button
               type='submit'
-              className='w-full mt-12 bg-black text-white rounded-4xl py-2 px-4 flex items-center justify-center font-medium cursor-pointer'
+              disabled={isLoading}
+              className='w-full mt-12 disabled:opacity-50 disabled:cursor-not-allowed bg-black text-white rounded-4xl py-2 px-4 flex items-center justify-center font-medium cursor-pointer'
             >
-              Log in
+              {isLoading ? 'Logging in...' : 'Log in'}
               <svg
                 className='w-4 h-4 ml-2'
                 fill='none'
@@ -179,7 +210,9 @@ const LoginView = ({ setIsAuthenticated, setLoginTime }: LoginViewProps) => {
 
           <button
             type='button'
-            className='w-full border border-gray-900 text-gray-900 rounded-4xl py-2 px-4 flex items-center justify-center cursor-pointer'
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading}
+            className='w-full border disabled:opacity-50 disabled:cursor-not-allowed border-gray-900 text-gray-900 rounded-4xl py-2 px-4 flex items-center justify-center cursor-pointer'
           >
             <svg
               className='w-5 h-5 mr-2'
@@ -204,7 +237,9 @@ const LoginView = ({ setIsAuthenticated, setLoginTime }: LoginViewProps) => {
                 fill='#1976D2'
               />
             </svg>
-            Sign in with Google
+            {isGoogleLoading
+              ? 'Signing in with Google...'
+              : 'Sign in with Google'}
             <svg
               className='w-4 h-4 ml-2'
               fill='none'

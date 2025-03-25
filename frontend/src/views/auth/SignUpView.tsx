@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from '../../components/header';
 import { auth } from '../../firebaseConfig';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from 'firebase/auth';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 
@@ -17,11 +21,37 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      console.log('User signed up with Google:', user);
+
+      await axios.post('/api/register', {
+        email: user.email,
+        googleAuth: true,
+      });
+
+      setIsAuthenticated(true);
+      navigate('/');
+      setIsGoogleLoading(false);
+    } catch (error: any) {
+      console.error('Error with Google sign-up:', error);
+      toast.error('Google sign-up failed. Please try again.');
+      setIsGoogleLoading(false);
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     if (password !== confirmPassword) {
       setPasswordError('Passwords do not match');
       return;
@@ -41,6 +71,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
       });
       setIsAuthenticated(true);
       navigate('/login');
+      setIsLoading(false);
     } catch (error: any) {
       setIsAuthenticated(false);
       const errorMessage =
@@ -49,6 +80,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
           : 'Error signing up. Please try again.';
 
       toast.error(errorMessage);
+      setIsLoading(false);
       console.error('Error signing up:', error);
     }
   };
@@ -203,9 +235,10 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
 
             <button
               type='submit'
-              className='w-full mt-12 bg-black text-white rounded-4xl py-2 px-4 flex items-center justify-center font-medium cursor-pointer'
+              disabled={isLoading}
+              className='w-full mt-12 disabled:opacity-50 disabled:cursor-not-allowed bg-black text-white rounded-4xl py-2 px-4 flex items-center justify-center font-medium cursor-pointer'
             >
-              Sign Up
+              {isLoading ? 'Signing up...' : 'Sign Up'}
               <svg
                 className='w-4 h-4 ml-2'
                 fill='none'
@@ -243,7 +276,9 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
 
           <button
             type='button'
-            className='w-full border border-gray-900 text-gray-900 rounded-4xl py-2 px-4 flex items-center justify-center cursor-pointer'
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading}
+            className='w-full border disabled:opacity-50 disabled:cursor-not-allowed border-gray-900 text-gray-900 rounded-4xl py-2 px-4 flex items-center justify-center cursor-pointer'
           >
             <svg
               className='w-5 h-5 mr-2'
@@ -268,7 +303,9 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
                 fill='#1976D2'
               />
             </svg>
-            Sign up with Google
+            {isGoogleLoading
+              ? 'Signing up with Google...'
+              : 'Sign up with Google'}
             <svg
               className='w-4 h-4 ml-2'
               fill='none'

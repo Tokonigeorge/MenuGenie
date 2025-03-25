@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useState } from 'react';
 import Button from './button';
-
+import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
+import { auth } from '../firebaseConfig';
 interface CreateMealPlanModalProps {
   onClose: () => void;
   onComplete: () => void;
@@ -32,6 +34,8 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
     formState: { errors },
     watch,
     setValue,
+    trigger,
+    clearErrors,
   } = useForm<FormValues>({
     defaultValues: {
       startDate: '',
@@ -289,31 +293,67 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
 
   const handleMealTypeSelect = (mealTypeId: string) => {
     const currentSelection = [...selectedMealTypes];
+
     if (currentSelection.includes(mealTypeId)) {
-      // Remove if already selected
-      setValue(
-        'mealType',
-        currentSelection.filter((id) => id !== mealTypeId)
-      );
+      const newSelection = currentSelection.filter((id) => id !== mealTypeId);
+      setValue('mealType', newSelection);
+
+      if (newSelection.length === 0) {
+        trigger('mealType');
+      }
     } else {
-      // Add if not already selected
-      setValue('mealType', [...currentSelection, mealTypeId]);
+      setValue('mealType', [...currentSelection, mealTypeId], {
+        shouldValidate: false,
+      });
+
+      if (errors.mealType) {
+        clearErrors('mealType');
+      }
     }
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     if (currentStep < totalSteps) {
+      if (currentStep === 2) {
+        if (data.mealType.length === 0) {
+          setValue('mealType', [], { shouldValidate: true });
+          return;
+        }
+      }
+      console.log('currentStep', data);
       setCurrentStep(currentStep + 1);
     } else {
       // Final step - create meal plan
       setIsLoading(true);
+      try {
+        const user = await auth.currentUser;
+        if (!user) {
+          toast.error('You must be logged in to create a meal plan');
+          setIsLoading(false);
+          return;
+        }
+        const token = await user.getIdToken();
 
-      // Simulate loading time
-      setTimeout(() => {
+        const response = await axios.post(
+          'http://localhost:8000/api/v1/meal-plans',
+          data,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const result = await response?.data;
+        console.log('Meal Plan Created', result);
         setIsLoading(false);
         setIsComplete(true);
-      }, 30000);
+      } catch (error) {
+        console.error('Error creating meal plan', error);
+        toast.error('Error creating meal plan');
+        setIsLoading(false);
+      }
     }
   };
 
@@ -376,7 +416,7 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className='text-gray-800 hover:text-gray-600'
+            className='text-gray-800 cursor-pointer hover:text-gray-600'
           >
             <svg
               className='w-5 h-5'
@@ -398,26 +438,29 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
         {/* Main content */}
         <div className='pt-4 pb-20 h-full overflow-y-auto flex flex-col'>
           {currentStep > 1 && !isLoading && !isComplete && (
-            <button
-              type='button'
-              onClick={handleBack}
-              className='mr-4 text-gray-600 hover:text-gray-800'
-            >
-              <svg
-                className='w-5 h-5'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-                xmlns='http://www.w3.org/2000/svg'
+            <div className='px-6 mb-4'>
+              <button
+                type='button'
+                onClick={handleBack}
+                className='mr-4 text-gray-600 cursor-pointer items-center text-sm flex gap-2 hover:text-gray-800'
               >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M15 19l-7-7 7-7'
-                />
-              </svg>
-            </button>
+                <svg
+                  className='w-5 h-5'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                  xmlns='http://www.w3.org/2000/svg'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M15 19l-7-7 7-7'
+                  />
+                </svg>
+                Back
+              </button>
+            </div>
           )}
           {!isLoading && !isComplete && renderStepper()}
 
@@ -581,6 +624,14 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
                       </div>
                     ))}
                   </div>
+                  <input
+                    type='hidden'
+                    {...register('mealType', {
+                      validate: (value) =>
+                        value.length > 0 ||
+                        'Please select at least one meal type',
+                    })}
+                  />
                   {errors.mealType && (
                     <p className='mt-1 text-sm text-red-600 text-left'>
                       {errors.mealType.message}
@@ -650,7 +701,7 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
                             <button
                               type='button'
                               onClick={() => toggleSection(section.id)}
-                              className='text-gray-500 focus:outline-none'
+                              className='text-gray-500 focus:outline-none cursor-pointer'
                             >
                               <svg
                                 className={`w-5 h-5 transition-transform ${
@@ -935,6 +986,7 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
           )}
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };

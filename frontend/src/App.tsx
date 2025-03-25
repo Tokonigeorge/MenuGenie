@@ -17,7 +17,7 @@ import SignUpView from './views/auth/SignUpView';
 import ForgotPasswordView from './views/auth/ForgotPassword';
 import { signOut } from 'firebase/auth';
 import { auth } from './firebaseConfig';
-
+import { ToastContainer } from 'react-toastify';
 function App() {
   const [activeTab, setActiveTab] = useState<'mealPlanner' | 'askGenie'>(
     'mealPlanner'
@@ -173,6 +173,7 @@ function App() {
             }
           />
         </Routes>
+        <ToastContainer />
       </div>
     </Router>
   );

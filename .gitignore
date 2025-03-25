@@ -49,3 +49,6 @@ logs/
 
 #project documentation
 project.md
+
+#firebase credentials
+firebase-cred.json

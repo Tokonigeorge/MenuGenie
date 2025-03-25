@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import TabNavigation from '../components/tabNavigation';
 import MealChatModal from '../components/mealChatModal';
+import CreateMealPlanModal from '../components/createMealPlanModal';
 
 // Sample data for meal plans
 const mealPlans = [
@@ -114,6 +115,7 @@ const MealPlansView: React.FC<{
   const [selectedPlan, setSelectedPlan] = useState<
     (typeof mealPlans)[0] | null
   >(null);
+  const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] = useState(false);
 
   const itemsPerPage = 4;
   const totalPages = Math.ceil(mealPlans.length / itemsPerPage);
@@ -129,6 +131,14 @@ const MealPlansView: React.FC<{
   const handlePlanClick = (plan: (typeof mealPlans)[0]) => {
     setSelectedPlan(plan);
     setIsModalOpen(true);
+  };
+
+  const handleCreatePlanClick = () => {
+    setIsCreatePlanModalOpen(true);
+  };
+
+  const handleCloseCreatePlanModal = () => {
+    setIsCreatePlanModalOpen(false);
   };
 
   return (
@@ -181,7 +191,7 @@ const MealPlansView: React.FC<{
         </div>
         <div className=' border-t border-gray-300 bg-gray-50 sticky bottom-0 h-[70px] py-3.5 w-full text-center'>
           <button
-            onClick={() => console.log('Create new plan clicked')}
+            onClick={handleCreatePlanClick}
             className='cursor-pointer py-3 max-w-[250px] mx-auto px-4 bg-gray-900 text-white text-sm rounded-3xl flex items-center justify-center gap-2 w-full'
             type='button'
           >
@@ -220,12 +230,12 @@ const MealPlansView: React.FC<{
                 </h3>
                 <p className='text-gray-500 pt-3 text-sm'>{plan.description}</p>
 
-                <div className='text-sm flex gap-1 mt-2 items-center'>
+                <div className='text-sm flex gap-1 mt-2 items-start'>
                   <h4 className=' text-gray-600'>Meals:</h4>
                   <p className='text-gray-500'>{plan.meals.join(', ')}</p>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <div className='text-sm flex gap-1 mt-2 items-center'>
+                  <div className='text-sm flex gap-1 mt-2 items-start'>
                     <h4 className=' text-gray-600'>Total Avg. Calories:</h4>
                     <p className='text-gray-500'>{plan.calories} kCal</p>
                   </div>
@@ -268,7 +278,7 @@ const MealPlansView: React.FC<{
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded-md text-sm ${
+                className={`px-3 py-1 rounded-md cursor-pointer text-sm ${
                   currentPage === page
                     ? 'border border-gray-900 text-gray-900'
                     : 'text-gray-400'
@@ -337,6 +347,12 @@ const MealPlansView: React.FC<{
       </div>
       {isModalOpen && (
         <MealChatModal onClose={handleCloseModal} selectedPlan={selectedPlan} />
+      )}
+      {isCreatePlanModalOpen && (
+        <CreateMealPlanModal
+          onClose={handleCloseCreatePlanModal}
+          onComplete={handleCreatePlanClick}
+        />
       )}
     </div>
   );

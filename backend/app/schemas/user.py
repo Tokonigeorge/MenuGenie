@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
-
+from typing import Optional
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: Optional[str] = None
+    googleAuth: Optional[bool] = False
