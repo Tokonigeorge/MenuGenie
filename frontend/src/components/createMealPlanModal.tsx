@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from './button';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import { auth } from '../firebaseConfig';
+import { useWebSocket } from '../hooks/websocketContext';
 interface CreateMealPlanModalProps {
   onClose: () => void;
   onComplete: () => void;
@@ -27,6 +28,10 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const { lastMessage } = useWebSocket();
+  const [createdMealPlanId, setCreatedMealPlanId] = useState<string | null>(
+    null
+  );
 
   const {
     register,
@@ -312,6 +317,34 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (lastMessage) {
+      console.log('Message type:', lastMessage.type);
+      console.log('Message meal_plan_id:', lastMessage.meal_plan_id);
+      console.log(
+        'Matches created ID:',
+        lastMessage.meal_plan_id === createdMealPlanId
+      );
+    }
+    if (
+      lastMessage &&
+      lastMessage.type === 'meal_plan_completed' &&
+      lastMessage.meal_plan_id === createdMealPlanId
+    ) {
+      // Meal plan is ready
+      setIsLoading(false);
+      setIsComplete(true);
+    } else if (
+      lastMessage &&
+      lastMessage.type === 'meal_plan_error' &&
+      lastMessage.meal_plan_id === createdMealPlanId
+    ) {
+      // Handle error
+      setIsLoading(false);
+      toast.error(`Error creating meal plan: ${lastMessage.error}`);
+    }
+  }, [lastMessage, createdMealPlanId]);
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onSubmit = async (data: FormValues) => {
     if (currentStep < totalSteps) {
@@ -346,9 +379,9 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
         );
 
         const result = await response?.data;
-        console.log('Meal Plan Created', result);
-        setIsLoading(false);
-        setIsComplete(true);
+        console.log('Meal Plan Creation Started', result);
+
+        setCreatedMealPlanId(result._id);
       } catch (error) {
         console.error('Error creating meal plan', error);
         toast.error('Error creating meal plan');

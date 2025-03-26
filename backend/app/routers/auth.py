@@ -26,7 +26,8 @@ async def register_user(user: UserCreate):
     hashed_password = hash_password(user.password)
     new_user = {
         "email": user.email,
-        "password": hashed_password
+        "password": hashed_password,
+        "firebaseUid": user.uuid
     }
     await db[settings.USER_COLLECTION].insert_one(new_user)
     return {"message": "User created successfully"}

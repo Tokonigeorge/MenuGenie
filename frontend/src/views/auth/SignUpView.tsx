@@ -36,6 +36,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
 
       await axios.post('/api/register', {
         email: user.email,
+        firebaseUid: user.uid,
         googleAuth: true,
       });
 
@@ -68,6 +69,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
       await axios.post('/api/register', {
         email: email,
         password: password,
+        firebaseUid: user.uid,
       });
       setIsAuthenticated(true);
       navigate('/login');

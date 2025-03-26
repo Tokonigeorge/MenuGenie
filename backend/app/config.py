@@ -17,5 +17,5 @@ class Settings:
     DATABASE_NAME: str = os.getenv("DATABASE_NAME") or "genie"
     USER_COLLECTION: str = os.getenv("USER_COLLECTION") or "users"
     MEAL_PLAN_COLLECTION: str = os.getenv("MEAL_PLAN_COLLECTION") or "meal_plans"
-
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
 settings = Settings()

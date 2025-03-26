@@ -39,6 +39,7 @@ class MealPlanBase(BaseModel):
     dietaryPreferences: List[str] = []
     cuisineTypes: List[str] = []
     complexityLevels: List[str] = []
+    dietaryRestrictions: List[str] = []
 
 class MealPlanCreate(MealPlanBase):
     pass
