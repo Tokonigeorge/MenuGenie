@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import TabNavigation from '../components/tabNavigation';
 import MealChatModal from '../components/mealChatModal';
 import CreateMealPlanModal from '../components/createMealPlanModal';
@@ -7,6 +7,7 @@ import { RootState, AppDispatch } from '../store/index';
 import { fetchMealPlans, MealPlan } from '../store/mealPlanSlice';
 import { format } from 'date-fns';
 import EmptyState from '../components/emptyState';
+
 const MealPlansView: React.FC<{
   activeTab: 'mealPlanner' | 'askGenie';
   setActiveTab: (tab: 'mealPlanner' | 'askGenie') => void;
@@ -31,17 +32,13 @@ const MealPlansView: React.FC<{
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = mealPlans.slice(indexOfFirstItem, indexOfLastItem);
 
-  useEffect(() => {
-    dispatch(fetchMealPlans());
-  }, [dispatch]);
-
   // Filter meal plans by search term
   // const filteredMealPlans = mealPlans.filter(
   //   (plan) =>
   //     plan.startDate.toLowerCase().includes(searchTerm.toLowerCase()) ||
   //     plan.endDate.toLowerCase().includes(searchTerm.toLowerCase())
   // );
-
+  console.log(mealPlans, 'mealPlans');
   const handleCloseModal = () => {
     setIsModalOpen(false);
   };

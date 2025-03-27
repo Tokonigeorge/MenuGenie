@@ -57,6 +57,7 @@ def cache_response(query_key: str, response: Dict[str, Any]) -> None:
 async def get_previous_meal_plans(user_id: str, limit: int = 3) -> List[Dict[str, Any]]:
     """Get the user's previous meal plans for context"""
     try:
+        #todo: we can also get the previous plans using other parameters like dietary restrictions, preferences, etc., to find a close match
         previous_plans = await db[settings.MEAL_PLAN_COLLECTION].find(
             {"userId": user_id, "status": "completed"}
         ).sort("createdAt", -1).limit(limit).to_list(limit)
@@ -139,7 +140,51 @@ async def generate_meal_plan(meal_plan_id: str, user_id: str, firebase_uid: str)
                 if "mealPlan" in plan and plan["mealPlan"]:
                     previous_meals_context += json.dumps(plan["mealPlan"], indent=2) + "\n\n"
              
-        prompt = f"""
+        meal_plan_schema = {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "day": {"type": "integer"},
+                            "meals": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {"type": "string"},
+                                        "name": {"type": "string"},
+                                        "ingredients": {
+                                            "type": "array",
+                                            "items": {"type": "string"}
+                                        },
+                                        "recipe": {"type": "string"},
+                                        "nutritionalInfo": {
+                                            "type": "object",
+                                            "properties": {
+                                                "calories": {"type": "integer"},
+                                                "protein": {"type": "integer"},
+                                                "carbs": {"type": "integer"},
+                                                "fat": {"type": "integer"}
+                                            },
+                                            "required": ["calories", "protein", "carbs", "fat"]
+                                        }
+                                    },
+                                    "required": ["type", "name", "ingredients", "recipe", "nutritionalInfo"]
+                                }
+                            }
+                        },
+                        "required": ["day", "meals"]
+                    }
+                }
+            },
+            "required": ["days"]
+        }
+                # System and user messages for the prompt
+        system_message = "You are a nutritionist and meal planning expert."
+        user_message = f"""
 Generate a personalized meal plan for {days_difference} days. 
 Dietary preferences: {', '.join(meal_plan.get('dietaryPreferences', []))}
 Meal types: {', '.join(meal_plan.get('mealType', []))}
@@ -148,66 +193,27 @@ Complexity levels: {', '.join(meal_plan.get('complexityLevels', []))}
 Dietary restrictions: {', '.join(meal_plan.get('dietaryRestrictions', []))}
 
 {previous_meals_context if previous_meals_context else ''}
-
-Please return the meal plan as a JSON object with the following structure:
-{{
-  "days": [
-    {{
-      "day": 1,
-      "meals": [
-        {{
-          "type": "breakfast",
-          "name": "Meal name",
-          "ingredients": ["ingredient1", "ingredient2"],
-          "recipe": "Step-by-step recipe instructions",
-          "nutritionalInfo": {{
-            "calories": 0,
-            "protein": 0,
-            "carbs": 0,
-            "fat": 0
-          }}
-        }},
-        // add lunch, dinner, snacks if applicable
-      ]
-    }},
-    // add more days if applicable
-  ]
-}}      
+Respond with a complete meal plan in JSON format.
 """
  # Call OpenAI API to generate meal plan
         OPENAI_LAST_REQUEST_TIME = time.time()
         response = await openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a nutritionist and meal planning expert."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_message},
+                  {"role": "user", "content": system_message + "\n\nHere is the required JSON schema:\n" + json.dumps(meal_plan_schema, indent=2)},
+                {"role": "user", "content": user_message}
             ],
+            response_format={"type": "json_object"},
             temperature=0.7,
             max_tokens=4000
         )   
-                # Extract and parse the response
-        try:
-            result_text = response.choices[0].message.content
-            # Parse the JSON response
-                      
-            cleaned_text = re.sub(r'//.*', '', result_text)
-            cleaned_text = re.sub(r'/\*.*?\*/', '', cleaned_text, flags=re.DOTALL)
-            try:
-                meal_plan_data = json.loads(cleaned_text)
-            except json.JSONDecodeError:
-                # Fall back to extracting JSON if direct parsing fails
-                json_start = result_text.find('{')
-                json_end = result_text.rfind('}') + 1
-                if json_start >= 0 and json_end > 0:
-                    json_str = result_text[json_start:json_end]
-                    meal_plan_data = json.loads(json_str)
-                else:
-                    meal_plan_data = {"error": "Failed to parse JSON response", "raw": result_text}
-        except Exception as e:
-            error_message = f"Failed to parse response: {str(e)}, {response.choices[0].message.content}"
 
-            print( error_message)
-        
+        # Parse the response and extract the meal plan data
+        response_content = response.choices[0].message.content
+        meal_plan_data = json.loads(response_content)
+              
+     
         # Cache the result
         cache_response(cache_key, meal_plan_data)
         
@@ -226,8 +232,7 @@ Please return the meal plan as a JSON object with the following structure:
         if updated_meal_plan:
             updated_meal_plan["_id"] = str(updated_meal_plan["_id"])
             updated_meal_plan["userId"] = str(updated_meal_plan["userId"])
-                # Notify client that meal plan is ready
-        print(f'ping frontend')
+         
         try:
             await manager.send_message(
                 {"type": "meal_plan_completed", "meal_plan_id": meal_plan_id, "meal_plan_data": updated_meal_plan},
@@ -240,13 +245,9 @@ Please return the meal plan as a JSON object with the following structure:
     except Exception as e:
             # Update database with error status
             try:
-                await db[settings.MEAL_PLAN_COLLECTION].update_one(
+                await db[settings.MEAL_PLAN_COLLECTION].delete_one(
                     {"_id": ObjectId(meal_plan_id)},
-                    {"$set": {
-                        "status": "error",
-                        "error": str(e),
-                        "completedAt": datetime.now().isoformat()
-                    }}
+                   
                 )
             except Exception as db_error:
                 print(f"Failed to update meal plan with error status: {db_error}")
@@ -303,7 +304,7 @@ async def get_user_meal_plans(current_user = Depends(get_current_user)):
     """
     try:
         meal_plans = await db[settings.MEAL_PLAN_COLLECTION].find(
-            {"userId": current_user["_id"]}
+            {"userId": current_user["_id"], "status": "completed"}
         ).to_list(100)
         for plan in meal_plans:
             plan["_id"] = str(plan["_id"])

@@ -1,16 +1,22 @@
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Header from '../components/header';
-import { RootState } from '../store';
-import { useState } from 'react';
+import { AppDispatch, RootState } from '../store';
+import { useEffect, useState } from 'react';
 import TabNavigation from '../components/tabNavigation';
 import MealPlansView from './mealPlansView';
 import AskGenieView from './askGenieView';
+import { fetchMealPlans } from '../store/mealPlanSlice';
 
 const MainView = () => {
   const [activeTab, setActiveTab] = useState<'mealPlanner' | 'askGenie'>(
     'mealPlanner'
   );
   const { mealPlans } = useSelector((state: RootState) => state.mealPlans);
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    dispatch(fetchMealPlans());
+  }, [dispatch]);
 
   return (
     <>

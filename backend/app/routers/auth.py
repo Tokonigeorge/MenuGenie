@@ -27,6 +27,7 @@ async def register_user(user: UserCreate):
     new_user = {
         "email": user.email,
         "password": hashed_password,
+        "googleAuth": user.googleAuth,
         "firebaseUid": user.uuid
     }
     await db[settings.USER_COLLECTION].insert_one(new_user)
