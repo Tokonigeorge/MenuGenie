@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel, Field, GetJsonSchemaHandler
 from pydantic.json_schema import JsonSchemaValue
 
@@ -50,11 +50,17 @@ class MealNutritionalInfo(BaseModel):
     carbs: int = 0
     fat: int = 0
 
+class RecipeStep(BaseModel):
+    step: str
+    description: str
+    required: bool = True
+
 class MealItem(BaseModel):
     type: str
+    description: Optional[str] = None
     name: str
     ingredients: List[str]
-    recipe: str
+    recipe: Union[str, List[RecipeStep]]
     nutritionalInfo: MealNutritionalInfo
 class MealDay(BaseModel):
     day: int

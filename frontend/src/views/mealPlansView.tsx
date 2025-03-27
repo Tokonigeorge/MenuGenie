@@ -31,6 +31,7 @@ const MealPlansView: React.FC<{
   const [selectedPlan, setSelectedPlan] = useState<
     (typeof mealPlans)[0] | null
   >(null);
+  const [selectedDay, setSelectedDay] = useState<MealDay | null>(null);
   const [isCreatePlanModalOpen, setIsCreatePlanModalOpen] =
     useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -72,8 +73,9 @@ const MealPlansView: React.FC<{
     setIsModalOpen(false);
   };
 
-  const handleViewDetails = (plan: MealPlan) => {
+  const handleViewDetails = (plan: MealPlan, day: MealDay) => {
     setSelectedPlan(plan);
+    setSelectedDay(day);
     setIsModalOpen(true);
   };
 
@@ -300,7 +302,7 @@ const MealPlansView: React.FC<{
                     {currentDays.map((day) => (
                       <div
                         key={day.day}
-                        onClick={() => handleViewDetails(selectedPlan)}
+                        onClick={() => handleViewDetails(selectedPlan, day)}
                         className='bg-white rounded-lg shadow-sm p-4 border cursor-pointer hover:bg-gray-50 border-gray-200'
                       >
                         <h3 className='text-sm font-medium text-gray-600'>
@@ -451,7 +453,11 @@ const MealPlansView: React.FC<{
         </div>
       )}
       {isModalOpen && (
-        <MealChatModal onClose={handleCloseModal} selectedPlan={selectedPlan} />
+        <MealChatModal
+          onClose={handleCloseModal}
+          selectedPlan={selectedPlan}
+          selectedDay={selectedDay}
+        />
       )}
       {isCreatePlanModalOpen && (
         <CreateMealPlanModal

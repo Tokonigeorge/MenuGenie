@@ -156,12 +156,13 @@ async def generate_meal_plan(meal_plan_id: str, user_id: str, firebase_uid: str)
                                     "type": "object",
                                     "properties": {
                                         "type": {"type": "string"},
+                                            "description": {"type": "string"},
                                         "name": {"type": "string"},
                                         "ingredients": {
                                             "type": "array",
                                             "items": {"type": "string"}
                                         },
-                                        "recipe": {"type": "string"},
+                                        "recipe": {"type": "array", "items": {"type": "object", "properties": {"step": {"type": "string"}, "description": {"type": "string"}}, "required": ["type", "boolean"]}},
                                         "nutritionalInfo": {
                                             "type": "object",
                                             "properties": {
@@ -195,22 +196,29 @@ Complexity levels: {', '.join(meal_plan.get('complexityLevels', []))}
 Dietary restrictions: {', '.join(meal_plan.get('dietaryRestrictions', []))}
 
 For each day, please provide:
-1. A brief description of the overall meal plan for that day
-2. Detailed recipes for each meal like so:
+A brief description of the overall meal plan for that day
+
+
+For each meal, please provide the recipe in a step by step format like so:
 Recipe:
-- Add 1 cup of rice to a pot
-- Then Add 1 cup of water to the pot
-- Cook on medium heat for 20 minutes
-- Add 1 cup of chicken broth to the pot...
-- Serve with a side of vegetables and enjoy!
-3. Nutritional information for each meal
-4. A comprehensive list of ingredients for each meal like so:
+- Step 1: Add 1 cup of rice to a pot
+- Step 2: Add 1 cup of water to the pot
+- Step 3: Cook on medium heat for 20 minutes
+- Step 4: Add 1 cup of chicken broth to the pot...
+- Step 5: Serve with a side of vegetables and enjoy!
+A comprehensive list of ingredients including their measurements for each meal like so:
 
 Ingredients:
 - 1 cup of rice
 - 1 cup of water
 - 1 cup of chicken broth
 - 1 cup of chicken broth
+
+A brief description/history of the meal like so:
+This is a healthy and delicious meal that is low in calories and high in protein and fiber. Native to the region of India.
+And maybe a fun fact about the meal like so:
+This meal is a traditional dish from the region of India and is a popular choice for vegetarians.
+
 
 {previous_meals_context if previous_meals_context else ''}
 Respond with a complete meal plan in JSON format.

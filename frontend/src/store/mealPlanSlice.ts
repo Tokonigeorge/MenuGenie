@@ -3,6 +3,12 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { auth } from '../firebaseConfig';
 
+export interface RecipeStep {
+  step: string;
+  description: string;
+  required?: boolean;
+}
+
 export interface MealDay {
   day: number;
   description: string;
@@ -13,8 +19,9 @@ export interface MealDay {
 export interface MealItem {
   type: string;
   name: string;
+  description?: string;
   ingredients: string[];
-  recipe: string;
+  recipe: string | RecipeStep[];
   nutritionalInfo: {
     calories: number;
     protein: number;

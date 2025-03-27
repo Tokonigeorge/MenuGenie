@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-
+import { MealPlan, MealDay, MealItem } from '../store/mealPlanSlice';
+import { format } from 'date-fns';
 const MealChatModal = ({
   onClose,
   selectedPlan,
+  selectedDay,
 }: {
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  selectedPlan: any;
+  selectedPlan: MealPlan;
+  selectedDay: MealDay;
 }) => {
-  const [selectedMealType, setSelectedMealType] = useState<
-    'Breakfast' | 'Lunch' | 'Dinner' | null
-  >(null);
+  const [selectedMealType, setSelectedMealType] = useState<string | null>(null);
   const [genieChats, setGenieChats] = useState<
     {
       message: string;
@@ -19,7 +19,7 @@ const MealChatModal = ({
   >([]);
   const [genieInput, setGenieInput] = useState('');
 
-  const handleMealTypeSelect = (type: 'Breakfast' | 'Lunch' | 'Dinner') => {
+  const handleMealTypeSelect = (type: string) => {
     setSelectedMealType(type);
   };
 
@@ -43,17 +43,38 @@ const MealChatModal = ({
     }
   };
 
+  function getFormattedDayDate(startDate: string, dayNumber: number): string {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + dayNumber - 1);
+    return format(date, 'MMM d');
+  }
+
+  const getMealTypes = () => {
+    if (!selectedDay || !selectedDay.meals) return [];
+    return [...new Set(selectedDay.meals.map((meal) => meal.type))];
+  };
+
+  const getSelectedMeal = (): MealItem | null => {
+    if (!selectedDay || !selectedMealType) return null;
+    return (
+      selectedDay.meals.find((meal) => meal.type === selectedMealType) || null
+    );
+  };
+
+  const selectedMeal = getSelectedMeal();
+  const dayDate = selectedPlan
+    ? getFormattedDayDate(selectedPlan.startDate, selectedDay?.day || 0)
+    : '';
+
   return (
     <div
-      className={`fixed top-0 right-0 h-full w-1/3 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out translate-x-0 flex flex-col`}
+      className={`fixed top-0 right-0 h-full w-full max-w-xl bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out translate-x-0 flex flex-col`}
     >
       {/* Modal Header */}
       <div className='p-4 border-b bg-gray-50 h-16 border-gray-200 flex justify-between items-center'>
         <h2 className='font-semibold text-gray-700'>
           {selectedMealType
-            ? `${selectedMealType} for ${selectedPlan?.title.split(' ')[0]} ${
-                selectedPlan?.title.split(' ')[1]
-              }`
+            ? `${selectedMealType} for ${dayDate}`
             : 'Select Menu / Meal type'}
         </h2>
         <button
@@ -78,12 +99,10 @@ const MealChatModal = ({
       <div className='flex-1 overflow-y-auto p-4'>
         {!selectedMealType ? (
           <div className='grid grid-rows-3 gap-4'>
-            {['Breakfast', 'Lunch', 'Dinner'].map((type) => (
+            {getMealTypes().map((type) => (
               <div
                 key={type}
-                onClick={() =>
-                  handleMealTypeSelect(type as 'Breakfast' | 'Lunch' | 'Dinner')
-                }
+                onClick={() => handleMealTypeSelect(type)}
                 className='border border-gray-100 bg-gray-50 py-3 px-4 rounded-lg text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100'
               >
                 {type}
@@ -92,53 +111,52 @@ const MealChatModal = ({
           </div>
         ) : (
           <div className='space-y-6 mt-2'>
-            <div className='text-gray-500 text-sm'>
-              <h3 className='font-medium'>Meal Title:</h3>
-              <p className='mt-1'>Nigerian Jollof Rice</p>
-            </div>
-            <div className='text-gray-500 text-sm'>
-              <h3 className='font-medium'>Description/History:</h3>
-              <p className='mt-1'>
-                Nigerian Jollof Rice is a beloved West African dish made with
-                rice, tomatoes, peppers, and a blend of spices. It's a staple at
-                parties, gatherings, and everyday meals, known for its rich,
-                smoky flavor. The dish is at the center of a friendly rivalry
-                between Nigeria, Ghana, and other West African countries, each
-                with its unique take. Nigerian Jollof is typically cooked with
-                long-grain parboiled rice, giving it a firm texture that absorbs
-                the flavors beautifully.
-              </p>
-            </div>
+            {selectedMeal && (
+              <>
+                <div className='text-gray-500 text-sm'>
+                  <h3 className='font-medium'>Meal Title:</h3>
+                  <p className='mt-1'>{selectedMeal.name}</p>
+                </div>
+                <div className='text-gray-500 text-sm'>
+                  <h3 className='font-medium'>Description/History:</h3>
+                  <p className='mt-1'>
+                    {selectedMeal.description || 'No description available'}
+                  </p>
+                </div>
 
-            <div className='text-gray-500 text-sm'>
-              <h3 className='font-medium'>
-                Calories (Per Serving - Approximate):
-              </h3>
-              <p className='mt-1'>
-                450-500 kcal per serving (depends on oil quantity and protein
-                choice).
-              </p>
-            </div>
-            <div className='text-gray-500 text-sm'>
-              <h3 className='font-medium'>Recipe:</h3>
-              <p className='mt-1 font-medium'>Ingredients:</p>
-              <ul className='list-disc pl-5 mt-2 text-sm text-gray-500'>
-                <li>2 cups of long-grain parboiled rice</li>
-                <li>6 large ripe tomatoes</li>
-                <li>2 red bell peppers</li>
-                <li>2 large onions</li>
-                <li>4 tablespoons of tomato paste</li>
-                <li>1/3 cup of vegetable oil</li>
-                <li>2-3 scotch bonnet peppers (adjust to taste)</li>
-                <li>3 cloves of garlic</li>
-                <li>1-inch piece of ginger</li>
-                <li>2 bay leaves</li>
-                <li>1 teaspoon thyme</li>
-                <li>1 teaspoon curry powder</li>
-                <li>2-3 stock cubes</li>
-                <li>Salt to taste</li>
-              </ul>
-            </div>
+                <div className='text-gray-500 text-sm'>
+                  <h3 className='font-medium'>
+                    Calories (Per Serving - Approximate):
+                  </h3>
+                  <p className='mt-1'>
+                    {selectedMeal.nutritionalInfo.calories} kcal per serving
+                  </p>
+                </div>
+                <div className='text-gray-500 text-sm'>
+                  <h3 className='font-medium'>Recipe:</h3>
+                  <p className='mt-1 font-medium'>Ingredients:</p>
+                  <ul className='list-disc pl-5 mt-2 text-sm text-gray-500'>
+                    {selectedMeal.ingredients.map((ingredient, index) => (
+                      <li key={index}>{ingredient}</li>
+                    ))}
+                  </ul>
+                  <p className='mt-3 font-medium'>Instructions:</p>
+                  {typeof selectedMeal.recipe === 'string' ? (
+                    <p className='mt-1'>{selectedMeal.recipe}</p>
+                  ) : (
+                    <ol className='list-decimal pl-5 mt-2 text-sm text-gray-500'>
+                      {selectedMeal.recipe.map((step, index) => (
+                        <li key={index} className='mb-2'>
+                          <span className='font-medium'>{step.step}:</span>{' '}
+                          {step.description}
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              </>
+            )}
+
             {genieChats.length > 0 && (
               <div className='mt-6'>
                 <div className='flex items-center gap-2 mb-3 border-t border-b bg-gray-50  p-2 -mx-4  border-t-gray-100 border-b-gray-100'>
