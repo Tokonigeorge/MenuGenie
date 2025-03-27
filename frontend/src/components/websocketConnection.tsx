@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { auth } from '../firebaseConfig';
+import { useDispatch } from 'react-redux';
 import { WebSocketContext, ConnectionStatus } from '../hooks/websocketContext';
 import { useLocation } from 'react-router-dom';
+import { updateMealPlan } from '../store/mealPlanSlice';
 
 // The WebSocket Provider component
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -10,11 +12,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [lastMessage, setLastMessage] = useState<any | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const maxReconnectAttempts = 5;
   const location = useLocation();
-  // Function to establish WebSocket connection
+  const dispatch = useDispatch();
+
   const connectWebSocket = useCallback(async () => {
     if (location.pathname !== '/') {
       return;
@@ -40,7 +42,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const token = await user.getIdToken();
       const uid = user.uid;
-      setUserId(uid);
+
       setStatus('connecting');
 
       const ws = new WebSocket(
@@ -68,6 +70,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
           const data = JSON.parse(event.data);
           console.log('WebSocket message received:', data);
           setLastMessage(data);
+
+          if (data.type === 'meal_plan_completed' && data.meal_plan_data) {
+            dispatch(updateMealPlan(data.meal_plan_data));
+          }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
         }
@@ -142,7 +148,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
           socket.close();
         }
         setStatus('disconnected');
-        setUserId(null);
       }
     });
 
@@ -178,7 +183,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
           socket.close();
         }
         setStatus('disconnected');
-        setUserId(null);
       }
     });
 

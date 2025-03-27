@@ -34,7 +34,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
       const user = result.user;
       console.log('User signed up with Google:', user);
 
-      await axios.post('/api/register', {
+      await axios.post('/api/auth/register', {
         email: user.email,
         firebaseUid: user.uid,
         googleAuth: true,
@@ -66,7 +66,7 @@ const SignUpView = ({ setIsAuthenticated }: SignUpViewProps) => {
       const user = userCredential?.user;
       console.log('User created:', user);
 
-      await axios.post('/api/register', {
+      await axios.post('/api/auth/register', {
         email: email,
         password: password,
         firebaseUid: user.uid,

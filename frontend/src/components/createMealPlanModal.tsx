@@ -5,6 +5,8 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import { auth } from '../firebaseConfig';
 import { useWebSocket } from '../hooks/websocketContext';
+import { useDispatch } from 'react-redux';
+import { addMealPlan } from '../store/mealPlanSlice';
 interface CreateMealPlanModalProps {
   onClose: () => void;
   onComplete: () => void;
@@ -23,6 +25,8 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
   onClose,
   onComplete,
 }) => {
+  const dispatch = useDispatch();
+
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 5;
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -318,20 +322,15 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
   };
 
   useEffect(() => {
-    if (lastMessage) {
-      console.log('Message type:', lastMessage.type);
-      console.log('Message meal_plan_id:', lastMessage.meal_plan_id);
-      console.log(
-        'Matches created ID:',
-        lastMessage.meal_plan_id === createdMealPlanId
-      );
-    }
     if (
       lastMessage &&
       lastMessage.type === 'meal_plan_completed' &&
       lastMessage.meal_plan_id === createdMealPlanId
     ) {
       // Meal plan is ready
+      if (lastMessage.meal_plan_id === createdMealPlanId) {
+        dispatch(addMealPlan(lastMessage.meal_plan));
+      }
       setIsLoading(false);
       setIsComplete(true);
     } else if (
@@ -343,7 +342,7 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
       setIsLoading(false);
       toast.error(`Error creating meal plan: ${lastMessage.error}`);
     }
-  }, [lastMessage, createdMealPlanId]);
+  }, [lastMessage, createdMealPlanId, dispatch]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onSubmit = async (data: FormValues) => {
@@ -381,6 +380,7 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
         const result = await response?.data;
         console.log('Meal Plan Creation Started', result);
 
+        dispatch(addMealPlan(result));
         setCreatedMealPlanId(result._id);
       } catch (error) {
         console.error('Error creating meal plan', error);
