@@ -14,6 +14,9 @@ import {
   differenceInMonths,
 } from 'date-fns';
 import EmptyState from '../components/emptyState';
+import axios from 'axios';
+import { auth } from '../firebaseConfig';
+import { toast, ToastContainer } from 'react-toastify';
 
 const MealPlansView: React.FC<{
   activeTab: 'mealPlanner' | 'askGenie';
@@ -112,10 +115,43 @@ const MealPlansView: React.FC<{
     return format(dayDate, 'MMM d');
   };
 
-  const handleFavoriteClick = (e: React.MouseEvent, dayId: string) => {
-    e.stopPropagation(); // Prevent card click from triggering
-    // TODO: Implement backend call to mark meal plan day as favorite
-    console.log('Marked day as favorite:', dayId);
+  const handleFavoriteClick = async (e: React.MouseEvent, dayId: string) => {
+    e.stopPropagation();
+    if (!selectedPlan) return;
+
+    try {
+      const user = await auth.currentUser;
+      if (!user) {
+        toast.error('You must be logged in to favorite a meal plan');
+        return;
+      }
+      const token = await user.getIdToken();
+      const isFavorite = selectedPlan.mealPlan?.days.find(
+        (day) => day.day.toString() === dayId
+      )?.isFavorite;
+
+      const response = await axios.post(
+        `http://localhost:8000/api/v1/meal-plans/${selectedPlan._id}/favorite`,
+        {
+          dayId,
+          isFavorite: !isFavorite,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status === 200) {
+        dispatch(fetchMealPlans());
+        toast.success(
+          !isFavorite ? 'Added to favorites' : 'Removed from favorites'
+        );
+      }
+    } catch (error) {
+      console.error('Failed to update meal plan', error);
+      toast.error('Failed to update meal plan');
+    }
   };
 
   const formatRelativeTime = (dateStr: string): string => {
@@ -301,7 +337,7 @@ const MealPlansView: React.FC<{
                               width='16'
                               height='17'
                               viewBox='0 0 16 17'
-                              fill='none'
+                              fill={day.isFavorite ? '#475367' : 'none'}
                               xmlns='http://www.w3.org/2000/svg'
                             >
                               <path
@@ -423,6 +459,7 @@ const MealPlansView: React.FC<{
           onComplete={handleCompletePlan}
         />
       )}
+      <ToastContainer />
     </div>
   );
 };

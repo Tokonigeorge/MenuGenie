@@ -7,6 +7,7 @@ export interface MealDay {
   day: number;
   description: string;
   meals: MealItem[];
+  isFavorite: boolean;
 }
 
 export interface MealItem {

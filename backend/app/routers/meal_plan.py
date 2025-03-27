@@ -369,3 +369,78 @@ async def get_meal_plan(meal_plan_id: str, current_user = Depends(get_current_us
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to retrieve meal plan: {str(e)}"
             ) from e
+    
+
+@router.post("/{meal_plan_id}/favorite", response_model=MealPlanResponse)
+async def toggle_favorite_day(
+    meal_plan_id: str, 
+    data: dict,
+    current_user = Depends(get_current_user)
+):
+    """
+    Toggle favorite status for a specific day in a meal plan
+    """
+    try:
+        # Convert string ID to ObjectId
+        try:
+            object_id = ObjectId(meal_plan_id)
+        except InvalidId:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid meal plan ID format"
+            ) 
+        
+        # Find the meal plan
+        meal_plan = await db[settings.MEAL_PLAN_COLLECTION].find_one(
+            {"_id": object_id, "userId": current_user["_id"]}
+        )
+        
+        if not meal_plan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Meal plan not found or you don't have permission to access it"
+            )
+        
+        # Update the favorite status for the specified day
+        day_id = data.get("dayId")
+        is_favorite = data.get("isFavorite", True)
+        
+        if not day_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Day ID is required"
+            )
+        
+        # Update the meal plan
+        if "mealPlan" in meal_plan and "days" in meal_plan["mealPlan"]:
+            days = meal_plan["mealPlan"]["days"]
+            for i, day in enumerate(days):
+                if str(day["day"]) == day_id:
+                    meal_plan["mealPlan"]["days"][i]["isFavorite"] = is_favorite
+                    break
+            
+            # Save the updated meal plan
+            await db[settings.MEAL_PLAN_COLLECTION].update_one(
+                {"_id": object_id},
+                {"$set": {"mealPlan": meal_plan["mealPlan"]}}
+            )
+            
+            # Return the updated meal plan
+            updated_meal_plan = await db[settings.MEAL_PLAN_COLLECTION].find_one({"_id": object_id})
+            if updated_meal_plan:
+                updated_meal_plan["_id"] = str(updated_meal_plan["_id"])
+                updated_meal_plan["userId"] = str(updated_meal_plan["userId"])
+                return updated_meal_plan
+        
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not update favorite status"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update favorite status: {str(e)}"
+        ) from e

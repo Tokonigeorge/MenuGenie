@@ -58,7 +58,9 @@ class MealItem(BaseModel):
     nutritionalInfo: MealNutritionalInfo
 class MealDay(BaseModel):
     day: int
+    description: Optional[str] = None
     meals: List[MealItem]
+    isFavorite: Optional[bool] = False
 
 class MealPlanData(BaseModel):
     days: List[MealDay]
