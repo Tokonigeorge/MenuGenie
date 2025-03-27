@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import TabNavigation from '../components/tabNavigation';
 import MealChatModal from '../components/mealChatModal';
 import CreateMealPlanModal from '../components/createMealPlanModal';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store/index';
-import { fetchMealPlans, MealPlan } from '../store/mealPlanSlice';
-import { format } from 'date-fns';
+import { fetchMealPlans, MealDay, MealPlan } from '../store/mealPlanSlice';
+import {
+  format,
+  isToday,
+  isYesterday,
+  differenceInDays,
+  differenceInWeeks,
+  differenceInMonths,
+} from 'date-fns';
 import EmptyState from '../components/emptyState';
 
 const MealPlansView: React.FC<{
@@ -25,27 +32,52 @@ const MealPlansView: React.FC<{
     useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  const itemsPerPage = 4;
-  const totalPages = Math.ceil(mealPlans.length / itemsPerPage);
+  useEffect(() => {
+    if (mealPlans.length > 0 && !selectedPlan) {
+      const completedPlans = mealPlans.filter(
+        (plan) => plan.status === 'completed'
+      );
+      if (completedPlans.length > 0) {
+        setSelectedPlan(completedPlans[0]);
+      } else if (mealPlans.length > 0) {
+        setSelectedPlan(mealPlans[0]);
+      }
+    }
+  }, [mealPlans, selectedPlan]);
+
+  const itemsPerPage = 6;
+
+  const getMealDays = () => selectedPlan?.mealPlan?.days || [];
+  const totalPages = Math.ceil(getMealDays().length / itemsPerPage);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = mealPlans.slice(indexOfFirstItem, indexOfLastItem);
+  const currentDays = getMealDays().slice(indexOfFirstItem, indexOfLastItem);
 
-  // Filter meal plans by search term
-  // const filteredMealPlans = mealPlans.filter(
-  //   (plan) =>
-  //     plan.startDate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     plan.endDate.toLowerCase().includes(searchTerm.toLowerCase())
-  // );
+  const filteredMealPlans = mealPlans.filter(
+    (plan) =>
+      format(new Date(plan.startDate), 'MMM d')
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      format(new Date(plan.endDate), 'MMM d')
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+  );
   console.log(mealPlans, 'mealPlans');
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
   };
 
-  const handlePlanClick = (plan: (typeof mealPlans)[0]) => {
+  const handleViewDetails = (plan: MealPlan) => {
     setSelectedPlan(plan);
     setIsModalOpen(true);
+  };
+
+  const handlePlanClick = (plan: (typeof mealPlans)[0]) => {
+    setSelectedPlan(plan);
+    setCurrentPage(1);
+    // setIsModalOpen(true);
   };
 
   const handleCreatePlanClick = () => {
@@ -59,49 +91,56 @@ const MealPlansView: React.FC<{
     dispatch(fetchMealPlans());
   };
 
-  const calculateTotalCalories = (plan: MealPlan): string => {
-    if (!plan.mealPlan?.days) return '0';
+  const calculateDayCalories = (day: MealDay): string => {
+    if (!day.meals) return '0';
 
     let total = 0;
-    plan.mealPlan.days.forEach((day) => {
-      day.meals.forEach((meal) => {
-        total += meal.nutritionalInfo.calories;
-      });
+    day.meals.forEach((meal) => {
+      total += meal.nutritionalInfo.calories;
     });
 
     return total.toLocaleString();
   };
 
-  const getMealNames = (plan: MealPlan): string[] => {
-    if (!plan.mealPlan?.days) return [];
-
-    const names: string[] = [];
-    plan.mealPlan.days.forEach((day) => {
-      day.meals.forEach((meal) => {
-        if (!names.includes(meal.name)) {
-          names.push(meal.name);
-        }
-      });
-    });
-
-    return names.slice(0, 5); // Just take the first 5 meals
+  const getFormattedDayDate = (
+    planStartDate: string,
+    dayNumber: number
+  ): string => {
+    const startDate = new Date(planStartDate);
+    const dayDate = new Date(startDate);
+    dayDate.setDate(startDate.getDate() + dayNumber - 1);
+    return format(dayDate, 'MMM d');
   };
+
+  const handleFavoriteClick = (e: React.MouseEvent, dayId: string) => {
+    e.stopPropagation(); // Prevent card click from triggering
+    // TODO: Implement backend call to mark meal plan day as favorite
+    console.log('Marked day as favorite:', dayId);
+  };
+
   const formatRelativeTime = (dateStr: string): string => {
     const date = new Date(dateStr);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+
+    const daysDiff = differenceInDays(new Date(), date);
+    if (daysDiff < 7) return `${daysDiff} days ago`;
+
+    const weeksDiff = differenceInWeeks(new Date(), date);
+    if (weeksDiff < 4) return `${weeksDiff} weeks ago`;
+
+    const monthsDiff = differenceInMonths(new Date(), date);
+    return `${monthsDiff} months ago`;
+  };
+
+  const getMealNamesForDay = (day: MealDay): string => {
+    return day.meals.map((meal) => meal.name).join(', ');
   };
 
   return (
     <div className='flex w-full'>
-      {loading ? (
+      {loading && mealPlans.length === 0 ? (
         <div className='flex justify-center items-center h-[calc(100vh-150px)] w-full overflow-hidden'>
           <div className='w-12 h-12 border-4 border-gray-900 border-t-transparent rounded-full animate-spin'></div>
         </div>
@@ -147,17 +186,26 @@ const MealPlansView: React.FC<{
 
               {/* Meal plans list */}
               <div className='flex-1  mt-4'>
-                {mealPlans.map((plan) => (
+                {filteredMealPlans?.map((plan) => (
                   <div key={plan._id} className='p-2 space-y-2'>
                     <div className='text-xs text-gray-400 font-medium px-2'>
                       {formatRelativeTime(plan.createdAt)}
                     </div>
                     <div
                       onClick={() => handlePlanClick(plan)}
-                      className='font-medium text-gray-600 text-sm px-2 py-3 rounded-lg hover:border hover:border-gray-400 hover:bg-gray-50 cursor-pointer'
+                      className={`relative font-medium text-sm  px-2 py-3 rounded-lg hover:bg-gray-50 cursor-pointer flex justify-between items-center ${
+                        selectedPlan?._id === plan._id
+                          ? 'border border-gray-400 bg-gray-50'
+                          : 'hover:border hover:border-gray-400'
+                      }`}
                     >
                       {format(new Date(plan.startDate), 'MMM d')} -{' '}
                       {format(new Date(plan.endDate), 'MMM d')} Meal Plan
+                      {plan.status === 'pending' && (
+                        <span className=' absolute right-0  top-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800'>
+                          Pending
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -195,141 +243,174 @@ const MealPlansView: React.FC<{
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               />
-              {
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mt-4'>
-                  {currentItems.map((plan) => (
-                    <div
-                      key={plan._id}
-                      onClick={() => handlePlanClick(plan)}
-                      className='bg-white rounded-lg shadow-sm p-4 border border-gray-200 cursor-pointer'
-                    >
-                      <h3 className='text-sm font-medium text-gray-600'>
-                        {format(new Date(plan.startDate), 'MMM d')} -{' '}
-                        {format(new Date(plan.endDate), 'MMM d')} Meal Plan
-                      </h3>
 
-                      {plan.status === 'pending' ? (
-                        <p className='text-yellow-500 pt-3 text-sm'>
-                          Generating meal plan...
+              <div className='grid grid-cols-1 gap-6 mt-4 w-full '>
+                {selectedPlan?.status === 'pending' ? (
+                  <div className='flex flex-col items-center justify-center h-64'>
+                    <div className='w-12 h-12 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mb-4'></div>
+                    <p className='text-gray-600'>
+                      Generating your meal plan...
+                    </p>
+                  </div>
+                ) : selectedPlan?.status === 'error' ? (
+                  <div className='flex flex-col items-center justify-center h-64'>
+                    <p className='text-red-500'>
+                      Error:{' '}
+                      {selectedPlan.error || 'Failed to generate meal plan'}
+                    </p>
+                  </div>
+                ) : selectedPlan?.mealPlan?.days ? (
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mt-4'>
+                    {currentDays.map((day) => (
+                      <div
+                        key={day.day}
+                        onClick={() => handleViewDetails(selectedPlan)}
+                        className='bg-white rounded-lg shadow-sm p-4 border cursor-pointer hover:bg-gray-50 border-gray-200'
+                      >
+                        <h3 className='text-sm font-medium text-gray-600'>
+                          Meal Plan for{' '}
+                          {getFormattedDayDate(selectedPlan.startDate, day.day)}
+                        </h3>
+                        <p className='text-gray-500 pt-3 text-sm'>
+                          {day.description ||
+                            `Meal plan for ${format(
+                              new Date(selectedPlan.startDate),
+                              'MMMM d'
+                            )} giving you a variety of options...`}
                         </p>
-                      ) : plan.status === 'error' ? (
-                        <p className='text-red-500 pt-3 text-sm'>
-                          Error: {plan.error || 'Failed to generate meal plan'}
-                        </p>
-                      ) : (
-                        <>
-                          <p className='text-gray-500 pt-3 text-sm'>
-                            {plan.mealPlan?.days.length || 0} day meal plan with{' '}
-                            {plan.mealType.join(', ')} recipes.
+                        <div className='text-sm flex gap-1 mt-2 items-start'>
+                          <h4 className='text-gray-600'>Meals:</h4>
+                          <p className='text-gray-500'>
+                            {getMealNamesForDay(day)}
                           </p>
-
-                          <div className='text-sm flex gap-1 mt-2 items-start'>
-                            <h4 className='text-gray-600'>Meals:</h4>
+                        </div>
+                        <div className='flex justify-between items-center mt-3'>
+                          <div className='text-sm flex gap-1 items-start'>
+                            <h4 className='text-gray-600'>Total Calories:</h4>
                             <p className='text-gray-500'>
-                              {getMealNames(plan).join(', ')}
+                              {calculateDayCalories(day)} kCal
                             </p>
                           </div>
-                          <div className='flex items-center justify-between'>
-                            <div className='text-sm flex gap-1 mt-2 items-start'>
-                              <h4 className='text-gray-600'>
-                                Total Avg. Calories:
-                              </h4>
-                              <p className='text-gray-500'>
-                                {calculateTotalCalories(plan)} kCal
-                              </p>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              }
+                          <button
+                            onClick={(e) =>
+                              handleFavoriteClick(e, day.day.toString())
+                            }
+                            className='p-1 hover:bg-gray-100 rounded-full cursor-pointer'
+                          >
+                            <svg
+                              width='16'
+                              height='17'
+                              viewBox='0 0 16 17'
+                              fill='none'
+                              xmlns='http://www.w3.org/2000/svg'
+                            >
+                              <path
+                                d='M9.15327 2.84001L10.3266 5.18668C10.4866 5.51334 10.9133 5.82668 11.2733 5.88668L13.3999 6.24001C14.7599 6.46668 15.0799 7.45334 14.0999 8.42668L12.4466 10.08C12.1666 10.36 12.0133 10.9 12.0999 11.2867L12.5733 13.3333C12.9466 14.9533 12.0866 15.58 10.6533 14.7333L8.65994 13.5533C8.29994 13.34 7.70661 13.34 7.33994 13.5533L5.34661 14.7333C3.91994 15.58 3.05327 14.9467 3.42661 13.3333L3.89994 11.2867C3.98661 10.9 3.83327 10.36 3.55327 10.08L1.89994 8.42668C0.926606 7.45334 1.23994 6.46668 2.59994 6.24001L4.72661 5.88668C5.07994 5.82668 5.50661 5.51334 5.66661 5.18668L6.83994 2.84001C7.47994 1.56668 8.51994 1.56668 9.15327 2.84001Z'
+                                stroke='#475367'
+                                stroke-width='1.2'
+                                stroke-linecap='round'
+                                stroke-linejoin='round'
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className='flex flex-col items-center justify-center h-64'>
+                    <p className='text-gray-500'>
+                      Select a meal plan to view details
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {mealPlans.length > 0 && (
-              <div className='border-t border-gray-300 h-[70px] px-4 py-3.5 w-full flex items-center justify-between'>
-                <div className='text-sm text-gray-500 font-medium'>
-                  Page <span className='text-gray-900'>{currentPage}</span> of{' '}
-                  {totalPages}
-                </div>
+            {selectedPlan?.mealPlan?.days &&
+              selectedPlan.mealPlan.days.length > itemsPerPage && (
+                <div className='border-t border-gray-300 h-[70px] px-4 py-3.5 w-full flex items-center justify-between'>
+                  <div className='text-sm text-gray-500 font-medium'>
+                    Page <span className='text-gray-900'>{currentPage}</span> of{' '}
+                    {totalPages}
+                  </div>
 
-                <div className='flex space-x-2'>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1 rounded-md cursor-pointer text-sm ${
-                          currentPage === page
-                            ? 'border border-gray-900 text-gray-900'
-                            : 'text-gray-400'
-                        }`}
+                  <div className='flex space-x-2'>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1 rounded-md cursor-pointer text-sm ${
+                            currentPage === page
+                              ? 'border border-gray-900 text-gray-900'
+                              : 'text-gray-400'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  <div className='flex space-x-2'>
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      disabled={currentPage === 1}
+                      className={`flex items-center px-3 py-2 rounded-4xl  border border-gray-300 text-sm text-gray-700 ${
+                        currentPage === 1
+                          ? ' cursor-not-allowed border-gray-200 text-gray-100 opacity-50'
+                          : 'cursor-pointer'
+                      }`}
+                    >
+                      <svg
+                        className='w-4 h-4 mr-1'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        xmlns='http://www.w3.org/2000/svg'
                       >
-                        {page}
-                      </button>
-                    )
-                  )}
-                </div>
-
-                <div className='flex space-x-2'>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                    disabled={currentPage === 1}
-                    className={`flex items-center px-3 py-2 rounded-4xl  border border-gray-300 text-sm text-gray-700 ${
-                      currentPage === 1
-                        ? ' cursor-not-allowed border-gray-200 text-gray-100 opacity-50'
-                        : 'cursor-pointer'
-                    }`}
-                  >
-                    <svg
-                      className='w-4 h-4 mr-1'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                      xmlns='http://www.w3.org/2000/svg'
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M15 19l-7-7 7-7'
+                        />
+                      </svg>
+                      Back
+                    </button>
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                      className={`flex items-center px-3 py-1 rounded-4xl border border-gray-300 text-sm text-gray-700 ${
+                        currentPage === totalPages
+                          ? 'cursor-not-allowed border-gray-200 text-gray-100 opacity-50'
+                          : 'cursor-pointer '
+                      }`}
                     >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M15 19l-7-7 7-7'
-                      />
-                    </svg>
-                    Back
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                    disabled={currentPage === totalPages}
-                    className={`flex items-center px-3 py-1 rounded-4xl border border-gray-300 text-sm text-gray-700 ${
-                      currentPage === totalPages
-                        ? 'cursor-not-allowed border-gray-200 text-gray-100 opacity-50'
-                        : 'cursor-pointer '
-                    }`}
-                  >
-                    Next
-                    <svg
-                      className='w-4 h-4 ml-1'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                      xmlns='http://www.w3.org/2000/svg'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M9 5l7 7-7 7'
-                      />
-                    </svg>
-                  </button>
+                      Next
+                      <svg
+                        className='w-4 h-4 ml-1'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        xmlns='http://www.w3.org/2000/svg'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M9 5l7 7-7 7'
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
       )}

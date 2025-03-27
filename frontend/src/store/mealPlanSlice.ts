@@ -5,6 +5,7 @@ import { auth } from '../firebaseConfig';
 
 export interface MealDay {
   day: number;
+  description: string;
   meals: MealItem[];
 }
 

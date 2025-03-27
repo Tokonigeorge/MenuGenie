@@ -395,6 +395,7 @@ const CreateMealPlanModal: React.FC<CreateMealPlanModalProps> = ({
       setCurrentStep(currentStep - 1);
     }
   };
+  //todo: include step for weight loss, weight gain, or maintenance
   // Generate stepper circles
   const renderStepper = () => {
     return (

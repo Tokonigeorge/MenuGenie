@@ -149,6 +149,7 @@ async def generate_meal_plan(meal_plan_id: str, user_id: str, firebase_uid: str)
                         "type": "object",
                         "properties": {
                             "day": {"type": "integer"},
+                            "description": {"type": "string"},
                             "meals": {
                                 "type": "array",
                                 "items": {
@@ -186,11 +187,30 @@ async def generate_meal_plan(meal_plan_id: str, user_id: str, firebase_uid: str)
         system_message = "You are a nutritionist and meal planning expert."
         user_message = f"""
 Generate a personalized meal plan for {days_difference} days. 
+Each day should have a description of the day and the meals for that day. Each day should contain meals for each meal type (breakfast, lunch, dinner, snack) included in the mealType array.
 Dietary preferences: {', '.join(meal_plan.get('dietaryPreferences', []))}
 Meal types: {', '.join(meal_plan.get('mealType', []))}
 Cuisine types: {', '.join(meal_plan.get('cuisineTypes', []))}
 Complexity levels: {', '.join(meal_plan.get('complexityLevels', []))}
 Dietary restrictions: {', '.join(meal_plan.get('dietaryRestrictions', []))}
+
+For each day, please provide:
+1. A brief description of the overall meal plan for that day
+2. Detailed recipes for each meal like so:
+Recipe:
+- Add 1 cup of rice to a pot
+- Then Add 1 cup of water to the pot
+- Cook on medium heat for 20 minutes
+- Add 1 cup of chicken broth to the pot...
+- Serve with a side of vegetables and enjoy!
+3. Nutritional information for each meal
+4. A comprehensive list of ingredients for each meal like so:
+
+Ingredients:
+- 1 cup of rice
+- 1 cup of water
+- 1 cup of chicken broth
+- 1 cup of chicken broth
 
 {previous_meals_context if previous_meals_context else ''}
 Respond with a complete meal plan in JSON format.
