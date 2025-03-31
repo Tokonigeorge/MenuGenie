@@ -345,9 +345,9 @@ const MealPlansView: React.FC<{
                               <path
                                 d='M9.15327 2.84001L10.3266 5.18668C10.4866 5.51334 10.9133 5.82668 11.2733 5.88668L13.3999 6.24001C14.7599 6.46668 15.0799 7.45334 14.0999 8.42668L12.4466 10.08C12.1666 10.36 12.0133 10.9 12.0999 11.2867L12.5733 13.3333C12.9466 14.9533 12.0866 15.58 10.6533 14.7333L8.65994 13.5533C8.29994 13.34 7.70661 13.34 7.33994 13.5533L5.34661 14.7333C3.91994 15.58 3.05327 14.9467 3.42661 13.3333L3.89994 11.2867C3.98661 10.9 3.83327 10.36 3.55327 10.08L1.89994 8.42668C0.926606 7.45334 1.23994 6.46668 2.59994 6.24001L4.72661 5.88668C5.07994 5.82668 5.50661 5.51334 5.66661 5.18668L6.83994 2.84001C7.47994 1.56668 8.51994 1.56668 9.15327 2.84001Z'
                                 stroke='#475367'
-                                stroke-width='1.2'
-                                stroke-linecap='round'
-                                stroke-linejoin='round'
+                                strokeWidth='1.2'
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
                               />
                             </svg>
                           </button>
@@ -452,7 +452,7 @@ const MealPlansView: React.FC<{
           </div>
         </div>
       )}
-      {isModalOpen && (
+      {isModalOpen && selectedPlan && selectedDay && (
         <MealChatModal
           onClose={handleCloseModal}
           selectedPlan={selectedPlan}

@@ -25,7 +25,9 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
   const [lastActivityTime, setLastActivityTime] = useState<number | null>(null);
-  const SESSION_TIMEOUT = 30 * 60 * 1000;
+  //30 minutes
+  //todo: change back to 30 minutes
+  const SESSION_TIMEOUT = 60 * 60 * 1000;
 
   const handleLogout = async () => {
     try {

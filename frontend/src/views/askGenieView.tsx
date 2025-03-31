@@ -1,86 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TabNavigation from '../components/tabNavigation';
-
-// Sample data for chat history
-const chatHistory = [
-  {
-    id: 1,
-    title: 'Meal plan for weight loss',
-    createdAt: '2 days ago',
-  },
-  {
-    id: 2,
-    title: 'Recipe for Nigerian Jollof',
-    createdAt: '5 days ago',
-  },
-  {
-    id: 3,
-    title: 'Vegan alternatives',
-    createdAt: '1 week ago',
-  },
-  {
-    id: 4,
-    title: 'Low carb breakfast ideas',
-    createdAt: '2 weeks ago',
-  },
-  {
-    id: 5,
-    title: 'Low carb breakfast ideas',
-    createdAt: '2 weeks ago',
-  },
-  {
-    id: 6,
-    title: 'Low carb breakfast ideas',
-    createdAt: '2 weeks ago',
-  },
-  {
-    id: 7,
-    title: 'Low carb breakfast ideas',
-    createdAt: '2 weeks ago',
-  },
-  {
-    id: 8,
-    title: 'Low carb breakfast ideas',
-    createdAt: '2 weeks ago',
-  },
-];
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../store';
+import {
+  fetchChats,
+  createChat,
+  sendMessage,
+  setCurrentChat,
+} from '../store/chatSlice';
+import { toast } from 'react-toastify';
+import { Chat } from '../services/chatService';
 
 const AskGenieView: React.FC<{
   activeTab: 'mealPlanner' | 'askGenie';
   setActiveTab: (tab: 'mealPlanner' | 'askGenie') => void;
 }> = ({ activeTab, setActiveTab }) => {
-  const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>(
-    []
+  const dispatch = useDispatch<AppDispatch>();
+  const { chats, currentChat, loading } = useSelector(
+    (state: RootState) => state.chats
   );
-  const [inputText, setInputText] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [hasChats, setHasChats] = useState(false);
+
+  const [inputText, setInputText] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(fetchChats());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (chats.length > 0 && !currentChat) {
+      dispatch(setCurrentChat(chats[0]));
+    }
+  }, [chats, currentChat, dispatch]);
+
+  // Scroll to bottom of messages
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentChat?.messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputText.trim()) {
-      // Add user message
-      setMessages([...messages, { text: inputText, isUser: true }]);
+    if (inputText.trim() && currentChat) {
+      dispatch(sendMessage({ chatId: currentChat._id, message: inputText }));
       setInputText('');
-      setHasChats(true);
-
-      // Simulate genie response
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            text: "I'm happy to help! What else would you like to know?",
-            isUser: false,
-          },
-        ]);
-      }, 1000);
+    } else if (inputText.trim()) {
+      // Create new chat first then send message
+      dispatch(createChat())
+        .unwrap()
+        .then((newChat) => {
+          dispatch(sendMessage({ chatId: newChat._id, message: inputText }));
+          setInputText('');
+        })
+        .catch((error) => {
+          toast.error(`Failed to create chat: ${error}`);
+        });
     }
   };
 
   const handleNewChat = () => {
-    setMessages([]);
-    setHasChats(true);
+    dispatch(createChat());
   };
+
+  const handleChatSelect = (chat: Chat) => {
+    dispatch(setCurrentChat(chat));
+  };
+
+  const filteredChats = chats.filter((chat) =>
+    chat.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className='flex h-[calc(100vh-64px)] w-full overflow-hidden'>
@@ -110,6 +101,8 @@ const AskGenieView: React.FC<{
               <input
                 type='text'
                 placeholder='Search anything'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className='pl-10 pr-4 py-2 w-full text-sm text-gray-400 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent'
               />
             </div>
@@ -117,12 +110,19 @@ const AskGenieView: React.FC<{
 
           {/* Chat history list */}
           <div className='flex-1 mt-4'>
-            {chatHistory.map((chat) => (
-              <div key={chat.id} className='p-2 space-y-2'>
+            {filteredChats.map((chat) => (
+              <div key={chat._id} className='p-2 space-y-2'>
                 <div className='text-xs text-gray-400 font-medium px-2'>
-                  {chat.createdAt}
+                  {new Date(chat.updatedAt).toLocaleDateString()}
                 </div>
-                <div className='font-medium text-gray-600 text-sm px-2 py-3 rounded-lg hover:border hover:border-gray-400 hover:bg-gray-50 cursor-pointer'>
+                <div
+                  className={`font-medium text-gray-600 text-sm px-2 py-3 rounded-lg hover:border hover:border-gray-400 hover:bg-gray-50 cursor-pointer ${
+                    currentChat?._id === chat._id
+                      ? 'bg-gray-100 border border-gray-300'
+                      : ''
+                  }`}
+                  onClick={() => handleChatSelect(chat)}
+                >
                   {chat.title}
                 </div>
               </div>
@@ -161,7 +161,12 @@ const AskGenieView: React.FC<{
         </div>
 
         <div className='flex-1 flex flex-col p-6 mx-6 overflow-y-auto bg-gray-50 rounded-xl'>
-          {messages.length === 0 ? (
+          {loading && !currentChat?.messages?.length && (
+            <div className='flex justify-center items-center h-full'>
+              <div className='animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-900'></div>
+            </div>
+          )}
+          {!loading && (!currentChat || !currentChat.messages?.length) ? (
             <div className='flex flex-col items-center justify-center h-full text-center'>
               <h2 className='text-2xl font-medium text-gray-600 mb-2'>
                 Hi, I'm Genie 🤚🏽
@@ -172,16 +177,17 @@ const AskGenieView: React.FC<{
             </div>
           ) : (
             <div className='space-y-4 flex-1'>
-              {messages.map((msg, index) => (
+              {currentChat?.messages?.map((msg, index) => (
                 <div
                   key={index}
                   className={`p-2.5 rounded-lg max-w-[80%] border w-max text-gray-600 border-gray-200 text-sm ${
                     msg.isUser ? 'ml-auto' : ''
                   }`}
                 >
-                  {msg.text}
+                  {msg.content}
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
@@ -200,7 +206,8 @@ const AskGenieView: React.FC<{
             />
             <button
               type='submit'
-              className='p-2 bg-gray-800 text-white rounded-md'
+              className='p-2 bg-gray-800 text-white rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
+              disabled={loading}
             >
               <svg
                 className='w-5 h-5 transform rotate-90'
