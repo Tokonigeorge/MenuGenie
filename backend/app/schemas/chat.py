@@ -48,3 +48,11 @@ class GenieChat(BaseModel):
             }
         }
     }
+class MessageRequest(BaseModel):
+    message: str
+
+class MealMessageRequest(BaseModel):
+    message: str
+    mealPlanId: str
+    dayId: str
+    mealType: str

@@ -2,15 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import TabNavigation from '../components/tabNavigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import {
-  fetchChats,
-  createChat,
-  sendMessage,
-  setCurrentChat,
-} from '../store/chatSlice';
+import { createChat, sendMessage, setCurrentChat } from '../store/chatSlice';
 import { toast } from 'react-toastify';
 import { Chat } from '../services/chatService';
-
+import { formatRelativeTime } from '../utils/helper';
 const AskGenieView: React.FC<{
   activeTab: 'mealPlanner' | 'askGenie';
   setActiveTab: (tab: 'mealPlanner' | 'askGenie') => void;
@@ -24,10 +19,6 @@ const AskGenieView: React.FC<{
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    dispatch(fetchChats());
-  }, [dispatch]);
 
   useEffect(() => {
     if (chats.length > 0 && !currentChat) {
@@ -113,7 +104,7 @@ const AskGenieView: React.FC<{
             {filteredChats.map((chat) => (
               <div key={chat._id} className='p-2 space-y-2'>
                 <div className='text-xs text-gray-400 font-medium px-2'>
-                  {new Date(chat.updatedAt).toLocaleDateString()}
+                  {formatRelativeTime(chat.updatedAt)}
                 </div>
                 <div
                   className={`font-medium text-gray-600 text-sm px-2 py-3 rounded-lg hover:border hover:border-gray-400 hover:bg-gray-50 cursor-pointer ${

@@ -20,12 +20,12 @@ export interface Chat {
 }
 
 export const chatService = {
-  async getChats(): Promise<Chat[]> {
+  async getChats(orderBy: string = 'createdAt'): Promise<Chat[]> {
     const user = await auth.currentUser;
     if (!user) throw new Error('User not authenticated');
 
     const token = await user.getIdToken();
-    const response = await axios.get(`${API_URL}/chats`, {
+    const response = await axios.get(`${API_URL}/chats?orderBy=${orderBy}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

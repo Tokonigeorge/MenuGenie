@@ -19,9 +19,9 @@ const initialState: ChatState = {
 
 export const fetchChats = createAsyncThunk(
   'chats/fetchChats',
-  async (_, { rejectWithValue }) => {
+  async (orderBy: string = 'createdAt', { rejectWithValue }) => {
     try {
-      return await chatService.getChats();
+      return await chatService.getChats(orderBy);
     } catch (error: any) {
       return rejectWithValue(error.message);
     }

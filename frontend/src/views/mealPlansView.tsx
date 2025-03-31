@@ -5,14 +5,8 @@ import CreateMealPlanModal from '../components/createMealPlanModal';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store/index';
 import { fetchMealPlans, MealDay, MealPlan } from '../store/mealPlanSlice';
-import {
-  format,
-  isToday,
-  isYesterday,
-  differenceInDays,
-  differenceInWeeks,
-  differenceInMonths,
-} from 'date-fns';
+import { format } from 'date-fns';
+import { formatRelativeTime } from '../utils/helper';
 import EmptyState from '../components/emptyState';
 import axios from 'axios';
 import { auth } from '../firebaseConfig';
@@ -67,7 +61,6 @@ const MealPlansView: React.FC<{
         .toLowerCase()
         .includes(searchTerm.toLowerCase())
   );
-  console.log(mealPlans, 'mealPlans');
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -154,22 +147,6 @@ const MealPlansView: React.FC<{
       console.error('Failed to update meal plan', error);
       toast.error('Failed to update meal plan');
     }
-  };
-
-  const formatRelativeTime = (dateStr: string): string => {
-    const date = new Date(dateStr);
-
-    if (isToday(date)) return 'Today';
-    if (isYesterday(date)) return 'Yesterday';
-
-    const daysDiff = differenceInDays(new Date(), date);
-    if (daysDiff < 7) return `${daysDiff} days ago`;
-
-    const weeksDiff = differenceInWeeks(new Date(), date);
-    if (weeksDiff < 4) return `${weeksDiff} weeks ago`;
-
-    const monthsDiff = differenceInMonths(new Date(), date);
-    return `${monthsDiff} months ago`;
   };
 
   const getMealNamesForDay = (day: MealDay): string => {
