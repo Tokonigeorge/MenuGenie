@@ -60,6 +60,8 @@ const initialState: MealPlanState = {
   loading: false,
   error: null,
 };
+//todo: change to backend url and add to .env
+const API_URL = 'http://localhost:8000/api/v1';
 
 export const fetchMealPlans = createAsyncThunk(
   'mealPlans/fetchAll',
@@ -71,14 +73,11 @@ export const fetchMealPlans = createAsyncThunk(
       }
 
       const token = await user.getIdToken();
-      const response = await axios.get(
-        'http://localhost:8000/api/v1/meal-plans',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.get(`${API_URL}/meal-plans`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       return response.data;
     } catch (error) {

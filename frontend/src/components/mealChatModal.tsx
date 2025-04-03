@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MealPlan, MealDay, MealItem } from '../store/mealPlanSlice';
 import { format } from 'date-fns';
+import { toast } from 'react-toastify';
+import axios from 'axios';
+import { auth } from '../firebaseConfig';
+
+interface ChatMessage {
+  content: string;
+  isUser: boolean;
+  timestamp: string;
+}
+
 const MealChatModal = ({
   onClose,
   selectedPlan,
@@ -11,35 +21,121 @@ const MealChatModal = ({
   selectedDay: MealDay;
 }) => {
   const [selectedMealType, setSelectedMealType] = useState<string | null>(null);
-  const [genieChats, setGenieChats] = useState<
-    {
-      message: string;
-      isUser: boolean;
-    }[]
-  >([]);
+  const [genieChats, setGenieChats] = useState<ChatMessage[]>([]);
   const [genieInput, setGenieInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // TODO: change to env variable
+  const API_URL = 'http://localhost:8000/api/v1';
+
+  // Scroll to bottom of messages when they change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [genieChats]);
+
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      if (!selectedMealType || !selectedPlan || !selectedDay) return;
+
+      try {
+        setHistoryLoading(true);
+
+        // Get Firebase token
+        const user = await auth.currentUser;
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+        const token = await user.getIdToken();
+
+        // Fetch chat history
+        const response = await axios.get(
+          `${API_URL}/chats/meal-chat/${selectedPlan._id}/${selectedDay.day}/${selectedMealType}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Update chat messages state
+        if (
+          response.data &&
+          response.data.messages &&
+          response.data.messages.length > 0
+        ) {
+          setGenieChats(response.data.messages);
+        }
+      } catch (error) {
+        console.error('Failed to fetch chat history:', error);
+        toast.error('Failed to load previous conversations.');
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    fetchChatHistory();
+  }, [selectedMealType, selectedPlan, selectedDay]);
 
   const handleMealTypeSelect = (type: string) => {
     setSelectedMealType(type);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (genieInput.trim()) {
-      setGenieChats([...genieChats, { message: genieInput, isUser: true }]);
-      setGenieInput('');
-      // Here you would typically call an API to get genie's response
-      // For now, we'll just simulate a response
-      setTimeout(() => {
-        setGenieChats((prev) => [
-          ...prev,
+    if (genieInput.trim() && selectedMealType) {
+      try {
+        setLoading(true);
+
+        // Add user message to chat immediately for responsive UI
+        const userMessage: ChatMessage = {
+          content: genieInput,
+          isUser: true,
+          timestamp: new Date().toISOString(),
+        };
+        setGenieChats((prev) => [...prev, userMessage]);
+
+        // Clear input
+        setGenieInput('');
+
+        // Get Firebase token
+        const user = await auth.currentUser;
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+        const token = await user.getIdToken();
+
+        // Send to backend
+        const response = await axios.post(
+          `${API_URL}/chats/meal-chat`,
           {
-            message:
-              "I've analyzed your question about this meal. What else would you like to know?",
-            isUser: false,
+            message: userMessage.content,
+            mealPlanId: selectedPlan._id,
+            dayId: selectedDay.day.toString(),
+            mealType: selectedMealType,
           },
-        ]);
-      }, 1000);
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Add AI response to chat
+        if (response.data && response.data.length > 1) {
+          const aiMessage = response.data[1];
+          setGenieChats((prev) => [...prev, aiMessage]);
+        }
+      } catch (error) {
+        console.error('Failed to send message:', error);
+        toast.error('Failed to send message. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -97,7 +193,11 @@ const MealChatModal = ({
         </button>
       </div>
       <div className='flex-1 overflow-y-auto p-4'>
-        {!selectedMealType ? (
+        {selectedMealType && historyLoading ? (
+          <div className='flex justify-center p-4'>
+            <div className='w-6 h-6 border-2 border-gray-900 border-t-transparent rounded-full animate-spin'></div>
+          </div>
+        ) : !selectedMealType ? (
           <div className='grid grid-rows-3 gap-4'>
             {getMealTypes().map((type) => (
               <div
@@ -195,7 +295,7 @@ const MealChatModal = ({
                           : 'mr-auto max-w-[80%] w-max '
                       }`}
                     >
-                      {chat.message}
+                      {chat?.content}
                     </div>
                   ))}
                 </div>
@@ -203,6 +303,7 @@ const MealChatModal = ({
             )}
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
       {selectedMealType && (
         <div className='sticky bottom-0 border-t border-gray-300 bg-gray-50 p-3 h-[70px]'>
@@ -219,7 +320,8 @@ const MealChatModal = ({
             />
             <button
               type='submit'
-              className='p-2 bg-gray-800 text-white rounded-md'
+              disabled={loading}
+              className='p-2 bg-gray-800 text-white rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
             >
               <svg
                 className='w-5 h-5 transform rotate-90'

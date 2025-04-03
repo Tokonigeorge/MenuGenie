@@ -18,4 +18,6 @@ class Settings:
     USER_COLLECTION: str = os.getenv("USER_COLLECTION") or "users"
     MEAL_PLAN_COLLECTION: str = os.getenv("MEAL_PLAN_COLLECTION") or "meal_plans"
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
+    CHAT_COLLECTION: str = os.getenv("CHAT_COLLECTION") or "chats"
+    MEAL_CHAT_COLLECTION: str = os.getenv("MEAL_CHAT_COLLECTION") or "meal_chats"
 settings = Settings()

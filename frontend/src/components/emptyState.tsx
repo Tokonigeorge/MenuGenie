@@ -5,9 +5,13 @@ import CreateMealPlanModal from './createMealPlanModal';
 
 interface EmptyStateProps {
   onCreatePlan: () => void;
+  setActiveTab: (tab: 'mealPlanner' | 'askGenie') => void;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ onCreatePlan }) => {
+const EmptyState: React.FC<EmptyStateProps> = ({
+  onCreatePlan,
+  setActiveTab,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenModal = () => {
@@ -57,6 +61,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onCreatePlan }) => {
         <CreateMealPlanModal
           onClose={handleCloseModal}
           onComplete={onCreatePlan}
+          setActiveTab={setActiveTab}
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import TabNavigation from '../components/tabNavigation';
 import MealPlansView from './mealPlansView';
 import AskGenieView from './askGenieView';
 import { fetchMealPlans } from '../store/mealPlanSlice';
+import { fetchChats } from '../store/chatSlice';
 
 const MainView = () => {
   const [activeTab, setActiveTab] = useState<'mealPlanner' | 'askGenie'>(
@@ -16,11 +17,12 @@ const MainView = () => {
 
   useEffect(() => {
     dispatch(fetchMealPlans());
+    dispatch(fetchChats('createdAt'));
   }, [dispatch]);
 
   return (
     <>
-      <Header>
+      <Header showLogout={true}>
         {mealPlans.length > 0 && (
           <button className='ml-auto hover:bg-gray-100 flex items-center border border-gray-900 text-gray-900 rounded-4xl px-3 py-2 cursor-pointer text-sm font-medium'>
             View favorite meal plans
