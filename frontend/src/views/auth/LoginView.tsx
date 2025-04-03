@@ -84,7 +84,7 @@ const LoginView = ({ setIsAuthenticated, setLoginTime }: LoginViewProps) => {
 
   return (
     <div className='min-h-screen flex flex-col bg-white'>
-      <Header />
+      <Header showLogout={false} />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

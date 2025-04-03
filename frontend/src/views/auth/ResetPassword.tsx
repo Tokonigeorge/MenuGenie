@@ -75,7 +75,7 @@ const ResetPasswordView = () => {
 
   return (
     <div className='min-h-screen flex flex-col bg-white'>
-      <Header />
+      <Header showLogout={false} />
       <div className='flex-1 flex py-10 justify-center px-4'>
         <div className='w-full max-w-md p-8 bg-white rounded-lg'>
           <h1 className='text-center text-xl font-medium text-gray-800 mb-4'>

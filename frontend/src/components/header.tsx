@@ -1,10 +1,49 @@
-import { ReactNode } from 'react';
-
+import { ReactNode, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 interface HeaderProps {
   children?: ReactNode;
+  setIsAuthenticated?: (value: boolean) => void;
+  showLogout?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ children }) => {
+const Header: React.FC<HeaderProps> = ({
+  children,
+  setIsAuthenticated,
+  showLogout = true,
+}) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const [userPhotoURL, setUserPhotoURL] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserPhotoURL(user.photoURL);
+        setUserName(user.displayName || user.email);
+      } else {
+        setUserPhotoURL(null);
+        setUserName(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      if (setIsAuthenticated) {
+        setIsAuthenticated(false);
+      }
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <header className='flex items-center h-16 px-6 bg-header border-b border-gray-200 bg-gray-50 justify-between'>
       <div className='flex items-center gap-2'>
@@ -55,8 +94,63 @@ const Header: React.FC<HeaderProps> = ({ children }) => {
         </div>
         <h1 className=' font-semibold text-gray-600'>mealGenie</h1>
       </div>
-
-      {children}
+      <div className='flex items-center gap-4'>
+        {children}
+        {showLogout && (
+          <div className='relative'>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className='flex items-center cursor-pointer justify-center w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors'
+            >
+              {userPhotoURL ? (
+                <img
+                  src={userPhotoURL}
+                  alt={userName || 'User'}
+                  className='w-full h-full object-cover'
+                />
+              ) : (
+                <div className='w-full h-full bg-gray-200 flex items-center justify-center text-gray-600'>
+                  <svg
+                    className='w-5 h-5'
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    xmlns='http://www.w3.org/2000/svg'
+                  >
+                    <path
+                      d='M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21'
+                      strokeWidth='2'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                    />
+                    <path
+                      d='M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z'
+                      strokeWidth='2'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                    />
+                  </svg>
+                </div>
+              )}
+            </button>
+            {showMenu && (
+              <div className='absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200'>
+                <div className='px-4 py-2 border-b border-gray-100'>
+                  <p className='text-sm font-medium text-gray-900'>
+                    {userName}
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className='block w-full cursor-pointer text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100'
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </header>
   );
 };
