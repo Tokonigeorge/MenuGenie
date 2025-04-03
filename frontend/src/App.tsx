@@ -18,6 +18,7 @@ import { auth } from './firebaseConfig';
 import { ToastContainer } from 'react-toastify';
 import { WebSocketProvider } from './components/websocketConnection';
 import MainView from './views/MainView';
+import ResetPasswordView from './views/auth/ResetPassword';
 
 function App() {
   // const [hasChats, setHasChats] = useState<boolean>(true);
@@ -41,45 +42,6 @@ function App() {
     }
   };
 
-  // useEffect(() => {
-  //   const unsubscribe = auth.onAuthStateChanged((user) => {
-  //     if (user) {
-  //       setIsAuthenticated(true);
-  //       if (!loginTime) {
-  //         setLoginTime(Date.now());
-  //       }
-  //     } else {
-  //       setIsAuthenticated(false);
-  //       setLoginTime(null);
-  //     }
-  //   });
-  //   return () => unsubscribe();
-  // }, [loginTime]);
-
-  // useEffect(() => {
-  //   if (!isAuthenticated || !loginTime) return;
-
-  //   const interval = setInterval(() => {
-  //     const currentTime = Date.now();
-  //     const timeSinceLastActivity = currentTime - loginTime;
-
-  //     if (timeSinceLastActivity > SESSION_TIMEOUT) {
-  //       handleLogout();
-  //     }
-  //   }, 60000); // Check every minute
-
-  //   return () => clearInterval(interval);
-  // }, [isAuthenticated, loginTime]);
-  // const [message, setMessage] = useState<string>('');
-
-  // useEffect(() => {
-  //   axios
-  //     .get('/api/')
-  //     .then((response: { data: { message: SetStateAction<string> } }) =>
-  //       setMessage(response.data.message)
-  //     )
-  //     .catch((error: any) => console.error('Error fetching data', error));
-  // }, []);
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -95,21 +57,6 @@ function App() {
     });
     return () => unsubscribe();
   }, []);
-
-  // useEffect(() => {
-  //   if (!isAuthenticated || !lastActivityTime) return;
-
-  //   const interval = setInterval(() => {
-  //     const currentTime = Date.now();
-  //     const timeSinceLastActivity = currentTime - lastActivityTime;
-
-  //     if (timeSinceLastActivity > SESSION_TIMEOUT) {
-  //       handleLogout();
-  //     }
-  //   }, 60000); // Check every minute
-
-  //   return () => clearInterval(interval);
-  // }, [isAuthenticated, lastActivityTime]);
 
   useEffect(() => {
     if (!isAuthenticated || !lastActivityTime) return;
@@ -160,6 +107,7 @@ function App() {
                 path='/signup'
                 element={<SignUpView setIsAuthenticated={setIsAuthenticated} />}
               />
+              <Route path='/reset-password' element={<ResetPasswordView />} />
               <Route path='/forgot-password' element={<ForgotPasswordView />} />
               <Route
                 path='/'

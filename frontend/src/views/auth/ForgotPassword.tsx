@@ -3,18 +3,35 @@ import { Link } from 'react-router-dom';
 import Header from '../../components/header';
 import { auth } from '../../firebaseConfig';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { toast, ToastContainer } from 'react-toastify';
+import RightArrowIcon from '../../components/rightArrowIcon';
 
 const ForgotPasswordView = () => {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      const actionCodeSettings = {
+        url: `${window.location.origin}/reset-password`,
+        handleCodeInApp: true,
+      };
+
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
       setIsSubmitted(true);
-    } catch (error) {
+      toast.success('Reset link sent! Check your email');
+    } catch (error: any) {
       console.error('Error resetting password:', error);
+      if (error.code === 'auth/user-not-found') {
+        toast.error('No account found with this email address');
+      } else {
+        toast.error('Failed to send reset link. Please try again');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -33,10 +50,14 @@ const ForgotPasswordView = () => {
 
           {isSubmitted ? (
             <div className='text-center'>
-              <p className='text-green-600 mb-6'>
-                If an account exists with this email, we've sent a password
-                reset link.
-              </p>
+              <div className='bg-green-50 p-4 rounded-md mb-6'>
+                <p className='text-green-800'>
+                  We've sent a password reset link to <strong>{email}</strong>
+                </p>
+                <p className='text-green-600 text-sm mt-2'>
+                  Check your spam folder if you don't see it in your inbox
+                </p>
+              </div>
               <Link
                 to='/login'
                 className='text-gray-600 underline cursor-pointer'
@@ -57,28 +78,17 @@ const ForgotPasswordView = () => {
                   className='w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder-gray-400'
                   placeholder='e.g bolu@gmail.com'
                   required
+                  disabled={isLoading}
                 />
               </div>
 
               <button
                 type='submit'
-                className='w-full mt-16 bg-gray-900 text-white rounded-4xl py-2 px-4 flex items-center justify-center font-medium cursor-pointer'
+                disabled={isLoading}
+                className='w-full mt-16 bg-black text-white rounded-4xl py-2 px-4 flex items-center justify-center font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
               >
-                Reset Password
-                <svg
-                  className='w-4 h-4 ml-2'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                  xmlns='http://www.w3.org/2000/svg'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M9 5l7 7-7 7'
-                  />
-                </svg>
+                {isLoading ? 'Sending Reset Link...' : 'Reset Password'}
+                <RightArrowIcon />
               </button>
             </form>
           )}
@@ -96,6 +106,12 @@ const ForgotPasswordView = () => {
           </div>
         </div>
       </div>
+      <ToastContainer
+        position='top-right'
+        autoClose={5000}
+        hideProgressBar
+        limit={1}
+      />
     </div>
   );
 };

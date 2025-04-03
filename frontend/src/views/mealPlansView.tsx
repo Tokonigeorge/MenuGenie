@@ -161,7 +161,10 @@ const MealPlansView: React.FC<{
         </div>
       ) : mealPlans.length === 0 ? (
         <div className='flex justify-center items-center h-[calc(100vh-150px)] w-full overflow-hidden'>
-          <EmptyState onCreatePlan={handleCreatePlanClick} />
+          <EmptyState
+            onCreatePlan={handleCreatePlanClick}
+            setActiveTab={setActiveTab}
+          />
         </div>
       ) : (
         <div className='flex h-[calc(100vh-64px)] w-full overflow-hidden'>
@@ -440,6 +443,7 @@ const MealPlansView: React.FC<{
         <CreateMealPlanModal
           onClose={handleCloseCreatePlanModal}
           onComplete={handleCompletePlan}
+          setActiveTab={setActiveTab}
         />
       )}
       <ToastContainer />

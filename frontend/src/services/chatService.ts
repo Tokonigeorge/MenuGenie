@@ -48,6 +48,18 @@ export const chatService = {
     return response.data;
   },
 
+  async deleteChat(chatId: string): Promise<void> {
+    const user = await auth.currentUser;
+    if (!user) throw new Error('User not authenticated');
+
+    const token = await user.getIdToken();
+    await axios.delete(`${API_URL}/chats/${chatId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
   async createChat(): Promise<Chat> {
     const user = await auth.currentUser;
     if (!user) throw new Error('User not authenticated');

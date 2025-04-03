@@ -43,7 +43,20 @@ export const createChat = createAsyncThunk(
   'chats/createChat',
   async (_, { rejectWithValue }) => {
     try {
+      console.log('I;m runnning');
       return await chatService.createChat();
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+export const deleteChat = createAsyncThunk(
+  'chats/deleteChat',
+  async (chatId: string, { dispatch, rejectWithValue }) => {
+    try {
+      await chatService.deleteChat(chatId);
+      dispatch(fetchChats('createdAt'));
+      return chatId;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -137,6 +150,13 @@ const chatSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+    // .addCase(deleteChat.fulfilled, (state, action) => {
+
+    // state.chats = state.chats.filter((chat) => chat._id !== action.payload);
+    // if (state.currentChat?._id === action.payload) {
+    //   state.currentChat = state.chats[0] || null;
+    // }
+    // });
   },
 });
 

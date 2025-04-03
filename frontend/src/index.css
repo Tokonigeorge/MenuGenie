@@ -12,6 +12,16 @@
   }
 }
 
+/* .Toastify__toast {
+  border-bottom: none !important;
+}
+
+.Toastify__toast-container {
+  width: auto !important;
+  min-width: 320px;
+  max-width: 480px;
+} */
+
 /* :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

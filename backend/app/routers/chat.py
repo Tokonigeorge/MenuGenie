@@ -292,6 +292,36 @@ async def get_meal_chat_history(
     
     return chat
 
+# Add this new endpoint after the other chat endpoints
+@router.delete("/{chat_id}")
+async def delete_chat(chat_id: str, user_id: str = Depends(get_current_user)):
+    # Extract just the user ID if a full user object is returned    
+    user_id_str = user_id["_id"] if isinstance(user_id, dict) and "_id" in user_id else user_id
+    
+    # Convert to string if it's an ObjectId
+    if isinstance(user_id_str, ObjectId):
+        user_id_str = str(user_id_str)
+        
+    # First check if the chat exists and belongs to the user
+    chat = await db[settings.CHAT_COLLECTION].find_one({
+        "_id": ObjectId(chat_id),
+        "userId": user_id_str
+    })
+    
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    # Delete the chat
+    result = await db[settings.CHAT_COLLECTION].delete_one({
+        "_id": ObjectId(chat_id),
+        "userId": user_id_str
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=400, detail="Failed to delete chat")
+    
+    return {"message": "Chat deleted successfully"}
+
 async def generate_meal_ai_response(messages, meal_context, generate_title=False):
     # Format messages for OpenAI with meal context
     system_prompt = """You are a helpful nutritionist and cooking expert named Genie. 

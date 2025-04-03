@@ -53,8 +53,9 @@ const Header: React.FC<HeaderProps> = ({ children }) => {
             </defs>
           </svg>
         </div>
-        <h1 className=' font-semibold text-gray-600'>Genie</h1>
+        <h1 className=' font-semibold text-gray-600'>mealGenie</h1>
       </div>
+
       {children}
     </header>
   );
